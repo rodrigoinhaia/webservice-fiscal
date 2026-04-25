@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>FiscalService.Api</RootNamespace>
+    <AssemblyName>FiscalService.Api</AssemblyName>
+    <Version>1.0.0</Version>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- EF Core + PostgreSQL -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.*">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.*" />
+
+    <!-- DFe.NET — NFe.Danfe.Nativo está embutido em Zeus.Net.NFe.NFCe -->
+    <PackageReference Include="Zeus.Net.NFe.NFCe" Version="*" />
+    <PackageReference Include="Zeus.Net.CTe" Version="*" />
+    <PackageReference Include="Zeus.Net.MDFe" Version="*" />
+
+    <!-- Swagger / OpenAPI -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.*" />
+
+    <!-- Logs -->
+    <PackageReference Include="Serilog.AspNetCore" Version="8.*" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.*" />
+    <!-- Console 5.x requerido pelo Serilog.AspNetCore 8.x -->
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.*" />
+
+    <!-- Health Checks -->
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.*" />
+
+    <!-- Carrega .env antes do host (dotnet run / IDE) -->
+    <PackageReference Include="DotNetEnv" Version="3.*" />
+  </ItemGroup>
+
+  <!-- Schemas XSD do DFe.NET — copiados para o output -->
+  <ItemGroup>
+    <Content Include="Schemas\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

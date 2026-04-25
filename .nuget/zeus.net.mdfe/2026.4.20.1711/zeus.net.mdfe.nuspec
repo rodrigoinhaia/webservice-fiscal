@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Zeus.Net.MDFe</id>
+    <version>2026.4.20.1711</version>
+    <title>Zeus MDFe (x86/x64)</title>
+    <authors>Zeus</authors>
+    <owners>Zeus</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <icon>icon.png</icon>
+    <projectUrl>https://github.com/ZeusAutomacao/DFe.NET</projectUrl>
+    <description>Biblioteca para geração de MDF-e.</description>
+    <releaseNotes></releaseNotes>
+    <copyright>zeus</copyright>
+    <language>pt-BR</language>
+    <tags>df-e dfe mdfe mdf-e</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2" />
+      <group targetFramework="net6.0" />
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>

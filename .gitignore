@@ -1,0 +1,33 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+_ReSharper*/
+*.DotSettings.user
+
+# Arquivos sensíveis
+.env
+*.pfx
+*.p12
+*.key
+
+# Diretórios de dados (montados como volume)
+src/FiscalService.Api/xmls/
+src/FiscalService.Api/logs/
+src/FiscalService.Api/certificados/
+
+# Logs
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# Rider
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

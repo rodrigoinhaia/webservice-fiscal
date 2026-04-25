@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  fiscal-service:
+    build:
+      context: .
+      dockerfile: src/FiscalService.Api/Dockerfile
+    image: fiscal-service:latest
+    container_name: fiscal-service
+    ports:
+      - "${SERVICE_PORT:-5555}:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ApiKey=${API_KEY}
+      - FISCAL__Ambiente=${FISCAL_AMBIENTE:-Homologacao}
+      - FISCAL__SalvarXmls=true
+      - FISCAL__DiretorioXmls=/app/xmls
+      - FISCAL__DiretorioSchemas=/app/schemas
+      - FISCAL__DiretorioCertificados=/app/certificados
+      - FISCAL__TimeoutWs=${FISCAL_TIMEOUT_WS:-30}
+      - Database__ConnectionString=Host=db;Port=5432;Database=fiscal_db;Username=fiscal_user;Password=${DB_PASSWORD}
+    volumes:
+      - fiscal_xmls:/app/xmls
+      - fiscal_certs:/app/certificados
+      - fiscal_logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: postgres:16-alpine
+    container_name: fiscal-db
+    environment:
+      - POSTGRES_DB=fiscal_db
+      - POSTGRES_USER=fiscal_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - fiscal_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fiscal_user -d fiscal_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  fiscal_xmls:
+    driver: local
+  fiscal_certs:
+    driver: local
+  fiscal_logs:
+    driver: local
+  fiscal_pgdata:
+    driver: local

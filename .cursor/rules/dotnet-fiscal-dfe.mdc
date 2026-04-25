@@ -1,0 +1,45 @@
+---
+description: .NET fullstack e emissão DF-e (NFe/NFCe) alinhado ao DFe.NET e ecossistema fiscal brasileiro
+alwaysApply: true
+---
+
+# Desenvolvimento fullstack .NET e emissão fiscal (DFe.NET)
+
+## Biblioteca principal
+
+- Trate **[ZeusAutomacao/DFe.NET](https://github.com/ZeusAutomacao/DFe.NET)** como referência e contrato mental para NFe (2.0, 3.10, 4.0), NFCe (3.10 e 4.0) e consumo dos serviços SEFAZ descritos em [NFe — Portal](http://www.nfe.fazenda.gov.br/portal/principal.aspx).
+- Antes de reinventar geração de XML, assinatura, validação de schema ou chamadas SOAP, alinhe nomes de classes, fluxos (envio, retorno, eventos) e versionamento de layout ao que o DFe.NET expõe e documenta.
+- Respeite **Notas Técnicas** e **MOC** oficiais; quando o manual e a lib divergirem, confira issues/PRs do repositório e a documentação vinculada ao pacote NuGet usado no projeto.
+
+## Arquitetura (ASP.NET Core)
+
+- Separe claramente: **API (controllers/minimal APIs)** → **aplicação/serviços fiscais** → **domínio (entidades, enums de status, chave de 44 dígitos)** → **infraestrutura (HTTP/SOAP, certificados, persistência, filas)**.
+- Serviços fiscais orquestram regras; **não** coloque regras de negócio complexas em controllers nem SQL direto na API.
+- Configuração sensível (senha de certificado, URLs de homologação/produção) via **IConfiguration / user secrets / Key Vault** — nunca em código.
+
+## Certificados e SEFAZ
+
+- Uso de certificado A1: carregar de forma segura, preferir arquivos/PFX fora do repositório e documentar o fluxo (Thumbprint, store, HSM) como o projeto já padronizar.
+- Sempre deixar explícito o **ambiente** (homologação x produção) e validar transição (URLs, cUF, série, regras de numeração).
+- Para padrões de **mTLS, SOAP, distribuição DF-e, manifestação do destinatário, XMLDSig**, use como inspiração de processo (linguagem diferente) o fluxo descrito em [raphahgomes/monitor-fiscal-sefaz](https://github.com/raphahgomes/monitor-fiscal-sefaz) — adapte a API e tipos ao C# e ao DFe.NET, sem copiar trechos incompatíveis de licença se houver restrição.
+
+## Repositórios de apoio (consulta conceitual)
+
+| Foco | Repositório |
+|------|-------------|
+| SPED / obrigações acessórias | [Eficaz-Sistemas/EficazFramework.SPED](https://github.com/Eficaz-Sistemas/EficazFramework.SPED) |
+| ERP open source BR (contexto fiscal) | [adempierelbr/adempierelbr](https://github.com/adempierelbr/adempierelbr) |
+| DLLs multitecnologia / DFe (visão ampla) | [Unimake/DFe](https://github.com/Unimake/DFe) |
+| API fiscal de referência | [vit0ur/FiscalApi](https://github.com/vit0ur/FiscalApi) |
+
+Use-os para entender modelagem, agregados e integrações; a implementação neste repositório deve continuar idiomática em **.NET** e alinhada ao **DFe.NET** quando o escopo for NFe/NFCe.
+
+## Código e qualidade
+
+- C# moderno, nullable habilitado, `async/await` em I/O, exceções com contexto (cStat, xMotivo, lote) quando fizer sentido.
+- Testes: unitários em serviços puros; integração opcional com mocks de SEFAZ ou gravação de XMLs oficiais de homologação.
+- Ao sugerir mudanças, cite arquivos e namespaces existentes; não introduza dependências fiscais não usadas no `.csproj` sem alinhamento com o time.
+
+## Front fullstack (quando existir no repo)
+
+- Manter a mesma fonte de verdade para regras fiscais no backend; UI apenas coleta, exibe e dispara operações. Não duplicar cálculo de impostos ou validação de regra crítica só no client.
