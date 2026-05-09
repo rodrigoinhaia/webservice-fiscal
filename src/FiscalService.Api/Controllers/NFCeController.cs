@@ -16,7 +16,7 @@ public class NFCeController : ControllerBase
         _nfceService = nfceService;
     }
 
-    /// <summary>Emite uma NFC-e 4.0 (venda ao consumidor). CSC e IdCSC são obrigatórios.</summary>
+    /// <summary>Emite uma NFC-e 4.0 (venda ao consumidor). CSC, IdCSC e preenchimento de QR Code/urlChave (versão configurável, padrão 2).</summary>
     [HttpPost("emitir")]
     public async Task<IActionResult> Emitir([FromBody] NFCeEmitirRequest request, CancellationToken ct)
     {

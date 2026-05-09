@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build-test-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore FiscalService.sln
+
+      - name: Build
+        run: dotnet build FiscalService.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test FiscalService.sln --no-build -c Release --verbosity normal
+
+      - name: Docker image
+        run: docker build -f src/FiscalService.Api/Dockerfile .

@@ -22,8 +22,9 @@ src/FiscalService.Api/certificados/
 *.log
 logs/
 
-# Docker
-.dockerignore
+# Cópias locais de variáveis (não versionar)
+.env.local
+.env.*.local
 
 # Rider
 .idea/

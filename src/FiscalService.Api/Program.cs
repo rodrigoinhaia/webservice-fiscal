@@ -3,8 +3,17 @@ using FiscalService.Api.Configuration;
 using FiscalService.Api.Data;
 using FiscalService.Api.Middlewares;
 using FiscalService.Api.Services;
+using FiscalService.Api.Swagger;
+using FiscalService.Api.Telemetry;
+using FiscalService.Api.Validation;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using System.Threading.RateLimiting;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 // ── Bootstrap logger (antes do builder) ────────────────────────────────────
 Log.Logger = new LoggerConfiguration()
@@ -21,10 +30,15 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     // ── Serilog (configuração via appsettings.json + env vars) ───────────────
+    // Sink de arquivo é opcional: só se Serilog:File estiver habilitado e o diretório for gravável.
     builder.Host.UseSerilog((ctx, services, configuration) =>
+    {
         configuration.ReadFrom.Configuration(ctx.Configuration)
-                     .ReadFrom.Services(services)
-                     .Enrich.FromLogContext());
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext();
+
+        SerilogFileSinkHelper.TryAddFileSink(configuration, ctx.Configuration);
+    });
 
     // ── Configurações tipadas ────────────────────────────────────────────────
     var fiscalConfig = builder.Configuration
@@ -41,10 +55,57 @@ try
 
     builder.Services.AddSingleton(fiscalConfig);
 
+    var rateLimiting = builder.Configuration.GetSection(RateLimitingConfig.SectionName).Get<RateLimitingConfig>()
+                       ?? new RateLimitingConfig();
+
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.OnRejected = async (ctx, cancellationToken) =>
+        {
+            ctx.HttpContext.Response.ContentType = "application/json";
+            await ctx.HttpContext.Response.WriteAsJsonAsync(new
+            {
+                sucesso = false,
+                erro = new
+                {
+                    tipo = "LimiteExcedido",
+                    mensagem = "Muitas requisições. Tente novamente em instantes.",
+                    timestamp = DateTime.UtcNow
+                }
+            }, cancellationToken);
+        };
+
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        {
+            if (!rateLimiting.Enabled)
+                return RateLimitPartition.GetNoLimiter("off");
+
+            if (httpContext.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
+                return RateLimitPartition.GetNoLimiter("health");
+
+            var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            return RateLimitPartition.GetFixedWindowLimiter(
+                ip,
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = Math.Max(1, rateLimiting.PermitLimit),
+                    Window = TimeSpan.FromSeconds(Math.Max(1, rateLimiting.WindowSeconds)),
+                    QueueLimit = 0
+                });
+        });
+    });
+
     // ── PostgreSQL / EF Core ─────────────────────────────────────────────────
-    var connectionString = builder.Configuration["Database:ConnectionString"]
-                        ?? builder.Configuration.GetConnectionString("DefaultConnection")
-                        ?? throw new InvalidOperationException("Connection string não configurada.");
+    static string? FirstNonEmpty(params string?[] values) =>
+        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
+    var connectionString = FirstNonEmpty(
+            builder.Configuration["Database:ConnectionString"],
+            builder.Configuration.GetConnectionString("DefaultConnection"))
+        ?? throw new InvalidOperationException(
+            "Connection string não configurada. Defina Database__ConnectionString ou DATABASE_URL/DB_PASSWORD no .env.");
 
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(connectionString));
@@ -61,15 +122,45 @@ try
     builder.Services.AddTransient<DanfeService>();
     builder.Services.AddTransient<NumeracaoService>();
     builder.Services.AddTransient<CertificadoService>();
+    builder.Services.AddScoped<EmissaoLogService>();
+
+    var otelCfg = builder.Configuration.GetSection(OpenTelemetryConfig.SectionName).Get<OpenTelemetryConfig>() ?? new();
+    var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]
+                       ?? builder.Configuration["OpenTelemetry:OtlpEndpoint"]
+                       ?? otelCfg.OtlpEndpoint;
+    var otelEnv = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"));
+    var otelOn = otelCfg.Enabled || otelEnv;
+    if (otelOn && !string.IsNullOrWhiteSpace(otlpEndpoint) && Uri.TryCreate(otlpEndpoint, UriKind.Absolute, out var otlpUri))
+    {
+        builder.Services.AddOpenTelemetry()
+            .ConfigureResource(rb => rb.AddService("FiscalService"))
+            .WithTracing(t => t
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter(o => o.Endpoint = otlpUri))
+            .WithMetrics(m => m
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddMeter(FiscalTelemetry.MeterName)
+                .AddOtlpExporter(o => o.Endpoint = otlpUri));
+    }
+    else if (otelOn && string.IsNullOrWhiteSpace(otlpEndpoint))
+    {
+        Log.Warning("OpenTelemetry ligado (config ou env) mas OTLP endpoint ausente — exportação ignorada.");
+    }
 
     // ── Controllers + JSON ───────────────────────────────────────────────────
-    builder.Services.AddControllers()
+    builder.Services.AddControllers(options => { options.Filters.Add<FiscalResponseTelemetryFilter>(); })
         .AddJsonOptions(opts =>
         {
             opts.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
             opts.JsonSerializerOptions.DefaultIgnoreCondition =
                 System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
         });
+
+    builder.Services.AddFluentValidationAutoValidation();
+    builder.Services.AddFluentValidationClientsideAdapters();
+    builder.Services.AddValidatorsFromAssemblyContaining<ConfiguracaoEmitenteRequestValidator>();
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
@@ -80,8 +171,11 @@ try
             Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
             In = Microsoft.OpenApi.Models.ParameterLocation.Header,
             Name = "X-Api-Key",
-            Description = "API Key para autenticação"
+            Description =
+                "Chave de API. Aceita uma chave ou várias separadas por vírgula/ponto-e-vírgula em configuração (rotação). " +
+                "Em Docker/.env: defina API_KEY; opcionalmente API_KEY_PREVIOUS durante rotação (ambas válidas)."
         });
+        c.OperationFilter<OpenApiCommonResponsesOperationFilter>();
         c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
         {
             {
@@ -140,10 +234,13 @@ try
         };
     });
 
-    // Middleware de autenticação por API Key (antes dos controllers)
+    app.UseRouting();
+
+    app.UseRateLimiter();
+
+    // Middleware de autenticação por API Key (após rate limit)
     app.UseMiddleware<ApiKeyMiddleware>();
 
-    app.UseRouting();
     app.UseAuthorization();
     app.MapControllers();
 

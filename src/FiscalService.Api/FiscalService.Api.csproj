@@ -40,6 +40,15 @@
 
     <!-- Carrega .env antes do host (dotnet run / IDE) -->
     <PackageReference Include="DotNetEnv" Version="3.*" />
+
+    <!-- Validação de entrada (além de DataAnnotations nos modelos) -->
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.*" />
+
+    <!-- Observabilidade (OTLP — ativo quando houver endpoint configurado) -->
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
   </ItemGroup>
 
   <!-- Schemas XSD do DFe.NET — copiados para o output -->

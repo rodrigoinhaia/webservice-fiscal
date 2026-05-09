@@ -27,5 +27,8 @@ public class NFCeEmitirRequest
     [Required]
     public string Csc { get; set; } = string.Empty;
 
+    /// <summary>Versão do QR Code exigida pela UF: "1", "2" ou "3". Padrão "2" (NFe 4.00).</summary>
+    public string QrCodeVersao { get; set; } = "2";
+
     public string? InformacoesAdicionais { get; set; }
 }

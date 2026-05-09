@@ -29,6 +29,28 @@ public class ItemNFeRequest
     public decimal? ValorIcms { get; set; }
     public decimal? ReducaoBaseIcms { get; set; }
 
+    /// <summary>ICMS ST e retidos (CST 60, CSOSN 201/202/203/500 etc.).</summary>
+    public decimal? BaseCalculoIcmsSt { get; set; }
+    public decimal? AliquotaIcmsSt { get; set; }
+    public decimal? ValorIcmsSt { get; set; }
+    public decimal? PercentualMvaSt { get; set; }
+    public decimal? PercentualReducaoBcSt { get; set; }
+    public decimal? BaseCalculoIcmsStRetido { get; set; }
+    public decimal? AliquotaSuportadaConsumidorFinal { get; set; }
+    public decimal? ValorIcmsStRetido { get; set; }
+    public decimal? ValorIcmsSubstituto { get; set; }
+    public decimal? BaseCalculoFcpStRetido { get; set; }
+    public decimal? AliquotaFcpStRetido { get; set; }
+    public decimal? ValorFcpStRetido { get; set; }
+    public decimal? PercentualReducaoBcEfetivo { get; set; }
+    public decimal? BaseCalculoEfetivo { get; set; }
+    public decimal? AliquotaIcmsEfetivo { get; set; }
+    public decimal? ValorIcmsEfetivo { get; set; }
+    public decimal? ValorIcmsDesonerado { get; set; }
+    public int? MotivoDesoneracaoIcms { get; set; }
+    public decimal? AliquotaCreditoSimples { get; set; }
+    public decimal? ValorCreditoSimples { get; set; }
+
     // PIS
     public string? CstPis { get; set; }
     public decimal? BaseCalculoPis { get; set; }

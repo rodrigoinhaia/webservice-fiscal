@@ -7,6 +7,7 @@ using FiscalService.Api.Data.Entities;
 using FiscalService.Api.Helpers;
 using FiscalService.Api.Models.Requests;
 using FiscalService.Api.Models.Responses;
+using FiscalService.Api.Services.Fiscal;
 using Microsoft.EntityFrameworkCore;
 using NFe.Classes;
 using NFe.Classes.Informacoes;
@@ -39,17 +40,20 @@ public class NFeService
     private readonly FiscalConfig _globalConfig;
     private readonly AppDbContext _db;
     private readonly DanfeService _danfeService;
+    private readonly NumeracaoService _numeracaoService;
     private readonly ILogger<NFeService> _logger;
 
     public NFeService(
         FiscalConfig globalConfig,
         AppDbContext db,
         DanfeService danfeService,
+        NumeracaoService numeracaoService,
         ILogger<NFeService> logger)
     {
         _globalConfig = globalConfig;
         _db = db;
         _danfeService = danfeService;
+        _numeracaoService = numeracaoService;
         _logger = logger;
     }
 
@@ -86,6 +90,9 @@ public class NFeService
             await RegistrarLogAsync(request.ConfiguracaoEmitente.Cnpj, "55", request.Serie,
                 request.NumeroNota, chave, protocolo, "Autorizado", cStat, xMotivo,
                 request.ConfiguracaoEmitente.Ambiente, ct);
+
+            await SincronizarNumeracaoAsync(request.ConfiguracaoEmitente.Cnpj, "55",
+                request.Serie, request.NumeroNota, ct);
 
             string? pdfBase64 = null;
             if (!string.IsNullOrWhiteSpace(xmlAutorizado))
@@ -141,7 +148,10 @@ public class NFeService
         }
     }
 
-    public async Task<FiscalResponse> CartaCorrecaoAsync(NFeCartaCorrecaoRequest request, CancellationToken ct = default)
+    public Task<FiscalResponse> CartaCorrecaoAsync(NFeCartaCorrecaoRequest request, CancellationToken ct = default) =>
+        Task.FromResult(CartaCorrecaoCore(request));
+
+    private FiscalResponse CartaCorrecaoCore(NFeCartaCorrecaoRequest request)
     {
         try
         {
@@ -177,7 +187,10 @@ public class NFeService
         }
     }
 
-    public async Task<FiscalResponse> ConsultarAsync(NFeConsultarRequest request, CancellationToken ct = default)
+    public Task<FiscalResponse> ConsultarAsync(NFeConsultarRequest request, CancellationToken ct = default) =>
+        Task.FromResult(ConsultarCore(request));
+
+    private FiscalResponse ConsultarCore(NFeConsultarRequest request)
     {
         try
         {
@@ -211,7 +224,10 @@ public class NFeService
         }
     }
 
-    public async Task<FiscalResponse> InutilizarAsync(NFeInutilizarRequest request, CancellationToken ct = default)
+    public Task<FiscalResponse> InutilizarAsync(NFeInutilizarRequest request, CancellationToken ct = default) =>
+        Task.FromResult(InutilizarCore(request));
+
+    private FiscalResponse InutilizarCore(NFeInutilizarRequest request)
     {
         try
         {
@@ -323,7 +339,7 @@ public class NFeService
         var uf = UfHelper.MapearUf(emitente.Uf);
         var dhEmissao = DateTimeOffset.Now;
 
-        var itens = req.Itens.Select((item, idx) => ConstruirItem(item, idx + 1)).ToList();
+        var itens = req.Itens.Select((item, idx) => ConstruirItem(item, idx + 1, req.ConfiguracaoEmitente.Crt)).ToList();
         var totalNota = CalcularTotais(req.Itens);
 
         return new NFe.Classes.NFe
@@ -461,7 +477,7 @@ public class NFeService
         return d;
     }
 
-    private static det ConstruirItem(ItemNFeRequest item, int numero)
+    private static det ConstruirItem(ItemNFeRequest item, int numero, int crt)
     {
         return new det
         {
@@ -488,50 +504,8 @@ public class NFeService
                 vOutro = item.ValorOutrasDespesas,
                 indTot = item.IndicadorTotal ? IndicadorTotal.ValorDoItemCompoeTotalNF : IndicadorTotal.ValorDoItemNaoCompoeTotalNF
             },
-            imposto = ConstruirImposto(item)
+            imposto = ImpostoItemFactory.Criar(item, crt)
         };
-    }
-
-    private static imposto ConstruirImposto(ItemNFeRequest item)
-    {
-        var imp = new imposto();
-
-        imp.ICMS = new ICMS
-        {
-            TipoICMS = new ICMS00
-            {
-                orig = (OrigemMercadoria)int.Parse(item.OrigemMercadoria ?? "0"),
-                CST = Csticms.Cst00,
-                modBC = DeterminacaoBaseIcms.DbiValorOperacao,
-                vBC = item.BaseCalculoIcms ?? 0,
-                pICMS = item.AliquotaIcms ?? 0,
-                vICMS = item.ValorIcms ?? 0
-            }
-        };
-
-        imp.PIS = new PIS
-        {
-            TipoPIS = new PISAliq
-            {
-                CST = (CSTPIS)int.Parse(item.CstPis ?? "07"),
-                vBC = item.BaseCalculoPis ?? 0,
-                pPIS = item.AliquotaPis ?? 0,
-                vPIS = item.ValorPis ?? 0
-            }
-        };
-
-        imp.COFINS = new COFINS
-        {
-            TipoCOFINS = new COFINSAliq
-            {
-                CST = (CSTCOFINS)int.Parse(item.CstCofins ?? "07"),
-                vBC = item.BaseCalculoCofins ?? 0,
-                pCOFINS = item.AliquotaCofins ?? 0,
-                vCOFINS = item.ValorCofins ?? 0
-            }
-        };
-
-        return imp;
     }
 
     private static (decimal BaseIcms, decimal Icms, decimal Produtos, decimal Frete, decimal Seguro,
@@ -583,6 +557,19 @@ public class NFeService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Falha ao salvar log de emissão — operação fiscal não comprometida.");
+        }
+    }
+
+    private async Task SincronizarNumeracaoAsync(string cnpj, string modelo, string serie, int numero, CancellationToken ct)
+    {
+        try
+        {
+            await _numeracaoService.ConfirmarNumeroAsync(cnpj, modelo, serie, numero, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao sincronizar numeração após emissão: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Numero={Numero}",
+                cnpj, modelo, serie, numero);
         }
     }
 

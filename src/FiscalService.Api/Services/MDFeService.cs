@@ -11,6 +11,7 @@ using MDFe.Classes.Flags;
 using MDFe.Classes.Informacoes;
 using MDFe.Servicos.EventosMDFe;
 using MDFe.Servicos.RecepcaoMDFe;
+using MDFe.Servicos.StatusServicoMDFe;
 using MDFe.Utils.Configuracoes;
 
 namespace FiscalService.Api.Services;
@@ -23,12 +24,14 @@ public class MDFeService
 {
     private readonly FiscalConfig _globalConfig;
     private readonly AppDbContext _db;
+    private readonly NumeracaoService _numeracaoService;
     private readonly ILogger<MDFeService> _logger;
 
-    public MDFeService(FiscalConfig globalConfig, AppDbContext db, ILogger<MDFeService> logger)
+    public MDFeService(FiscalConfig globalConfig, AppDbContext db, NumeracaoService numeracaoService, ILogger<MDFeService> logger)
     {
         _globalConfig = globalConfig;
         _db = db;
+        _numeracaoService = numeracaoService;
         _logger = logger;
     }
 
@@ -58,6 +61,9 @@ public class MDFeService
                 request.NumeroNota, chave, protocolo, "Autorizado", cStat, xMotivo,
                 request.ConfiguracaoEmitente.Ambiente, ct);
 
+            await SincronizarNumeracaoAsync(request.ConfiguracaoEmitente.Cnpj, "58",
+                request.Serie, request.NumeroNota, ct);
+
             _logger.LogInformation("MDF-e autorizado: Chave={Chave}", chave);
             return FiscalResponse.Ok(chave, protocolo, cStat, xMotivo);
         }
@@ -68,7 +74,10 @@ public class MDFeService
         }
     }
 
-    public async Task<FiscalResponse> EncerrarAsync(MDFeEncerrarRequest request, CancellationToken ct = default)
+    public Task<FiscalResponse> EncerrarAsync(MDFeEncerrarRequest request, CancellationToken ct = default) =>
+        Task.FromResult(EncerrarCore(request));
+
+    private FiscalResponse EncerrarCore(MDFeEncerrarRequest request)
     {
         try
         {
@@ -104,7 +113,44 @@ public class MDFeService
         }
     }
 
-    public async Task<FiscalResponse> CancelarAsync(MDFeCancelarRequest request, CancellationToken ct = default)
+    public Task<FiscalResponse> CancelarAsync(MDFeCancelarRequest request, CancellationToken ct = default) =>
+        Task.FromResult(CancelarMdfeCore(request));
+
+    /// <summary>Consulta status do serviço SEFAZ MDF-e (modelo 58).</summary>
+    public StatusServicoResponse ConsultarStatusSefaz(ConfiguracaoEmitenteRequest emitente)
+    {
+        try
+        {
+            var config = ConstruirConfiguracao(emitente);
+            var ret = new ServicoMDFeStatusServico().MDFeStatusServico(config);
+
+            if (ret is null)
+                return new StatusServicoResponse { Sucesso = false, Mensagem = "Sem retorno da SEFAZ." };
+
+            return new StatusServicoResponse
+            {
+                Sucesso = ret.CStat == 107,
+                CodigoStatus = ret.CStat.ToString(),
+                Mensagem = ret.XMotivo,
+                Uf = emitente.Uf,
+                Modelo = "MDFe",
+                Ambiente = emitente.Ambiente,
+                Timestamp = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao consultar status SEFAZ MDF-e");
+            return new StatusServicoResponse
+            {
+                Sucesso = false,
+                Mensagem = ex.Message,
+                Erro = new ErroResponse { Tipo = ClassificarExcecao(ex), Mensagem = ex.Message, Timestamp = DateTime.UtcNow }
+            };
+        }
+    }
+
+    private FiscalResponse CancelarMdfeCore(MDFeCancelarRequest request)
     {
         try
         {
@@ -150,6 +196,11 @@ public class MDFeService
         config.IsSalvarXml = _globalConfig.SalvarXmls;
         config.CaminhoSalvarXml = _globalConfig.DiretorioXmls;
         config.CaminhoSchemas = _globalConfig.DiretorioSchemas;
+
+        config.VersaoWebService.UfEmitente = UfHelper.MapearUf(emitente.Uf);
+        config.VersaoWebService.TipoAmbiente =
+            emitente.Ambiente == "Producao" ? TipoAmbiente.Producao : TipoAmbiente.Homologacao;
+        config.VersaoWebService.TimeOut = _globalConfig.TimeoutWs;
 
         return config;
     }
@@ -235,6 +286,19 @@ public class MDFeService
         };
 
         return mdfe;
+    }
+
+    private async Task SincronizarNumeracaoAsync(string cnpj, string modelo, string serie, int numero, CancellationToken ct)
+    {
+        try
+        {
+            await _numeracaoService.ConfirmarNumeroAsync(cnpj, modelo, serie, numero, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao sincronizar numeração MDF-e: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Numero={Numero}",
+                cnpj, modelo, serie, numero);
+        }
     }
 
     private async Task RegistrarLogAsync(string cnpj, string modelo, string serie, int numero,

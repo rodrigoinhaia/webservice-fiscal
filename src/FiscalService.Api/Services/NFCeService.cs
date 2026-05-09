@@ -7,6 +7,7 @@ using FiscalService.Api.Data.Entities;
 using FiscalService.Api.Helpers;
 using FiscalService.Api.Models.Requests;
 using FiscalService.Api.Models.Responses;
+using FiscalService.Api.Services.Fiscal;
 using NFe.Classes;
 using NFe.Classes.Informacoes;
 using NFe.Classes.Informacoes.Detalhe;
@@ -24,6 +25,8 @@ using NFe.Classes.Informacoes.Transporte;
 using NFe.Classes.Servicos.Tipos;
 using NFe.Servicos;
 using NFe.Utils;
+using NFe.Utils.InformacoesSuplementares;
+using NFe.Utils.NFe;
 
 namespace FiscalService.Api.Services;
 
@@ -36,17 +39,20 @@ public class NFCeService
     private readonly FiscalConfig _globalConfig;
     private readonly AppDbContext _db;
     private readonly DanfeService _danfeService;
+    private readonly NumeracaoService _numeracaoService;
     private readonly ILogger<NFCeService> _logger;
 
     public NFCeService(
         FiscalConfig globalConfig,
         AppDbContext db,
         DanfeService danfeService,
+        NumeracaoService numeracaoService,
         ILogger<NFCeService> logger)
     {
         _globalConfig = globalConfig;
         _db = db;
         _danfeService = danfeService;
+        _numeracaoService = numeracaoService;
         _logger = logger;
     }
 
@@ -56,6 +62,8 @@ public class NFCeService
         {
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
             var nfce = ConstruirNFCe(request, config);
+            nfce.Assina(config);
+            PreencherInformacoesSuplementaresNfce(nfce, config, request);
 
             using var servicos = new ServicosNFe(config);
             var idLote = (int)(Math.Abs(DateTime.UtcNow.Ticks) % int.MaxValue);
@@ -81,6 +89,9 @@ public class NFCeService
                 request.NumeroNota, chave, protocolo, "Autorizado", cStat, xMotivo,
                 request.ConfiguracaoEmitente.Ambiente, ct);
 
+            await SincronizarNumeracaoAsync(request.ConfiguracaoEmitente.Cnpj, "65",
+                request.Serie, request.NumeroNota, ct);
+
             string? pdfBase64 = null;
             if (!string.IsNullOrWhiteSpace(xmlAutorizado))
             {
@@ -98,7 +109,46 @@ public class NFCeService
         }
     }
 
-    public async Task<FiscalResponse> CancelarAsync(NFeCancelarRequest request, CancellationToken ct = default)
+    public Task<FiscalResponse> CancelarAsync(NFeCancelarRequest request, CancellationToken ct = default) =>
+        Task.FromResult(CancelarCore(request));
+
+    /// <summary>Consulta status do serviço SEFAZ NFC-e (modelo 65) usando <see cref="ServicosNFe"/>.</summary>
+    public StatusServicoResponse ConsultarStatusSefaz(ConfiguracaoEmitenteRequest emitente)
+    {
+        try
+        {
+            var config = ConstruirConfiguracao(emitente);
+            using var servicos = new ServicosNFe(config);
+            var retorno = servicos.NfeStatusServico();
+
+            var ret = retorno.Retorno;
+            if (ret is null)
+                return new StatusServicoResponse { Sucesso = false, Mensagem = "Sem retorno da SEFAZ." };
+
+            return new StatusServicoResponse
+            {
+                Sucesso = ret.cStat == 107,
+                CodigoStatus = ret.cStat.ToString(),
+                Mensagem = ret.xMotivo,
+                Uf = emitente.Uf,
+                Modelo = "NFCe",
+                Ambiente = emitente.Ambiente,
+                Timestamp = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao consultar status SEFAZ NFC-e");
+            return new StatusServicoResponse
+            {
+                Sucesso = false,
+                Mensagem = ex.Message,
+                Erro = new ErroResponse { Tipo = ClassificarExcecao(ex), Mensagem = ex.Message, Timestamp = DateTime.UtcNow }
+            };
+        }
+    }
+
+    private FiscalResponse CancelarCore(NFeCancelarRequest request)
     {
         try
         {
@@ -164,7 +214,7 @@ public class NFCeService
         var uf = UfHelper.MapearUf(emitente.Uf);
         var dhEmissao = DateTimeOffset.Now;
 
-        var itens = req.Itens.Select((item, idx) => ConstruirItem(item, idx + 1)).ToList();
+        var itens = req.Itens.Select((item, idx) => ConstruirItem(item, idx + 1, req.ConfiguracaoEmitente.Crt)).ToList();
         var totalProdutos = req.Itens.Sum(i => i.ValorTotalBruto);
         var totalDesconto = req.Itens.Sum(i => i.ValorDesconto ?? 0);
         var totalNota = totalProdutos - totalDesconto;
@@ -259,15 +309,35 @@ public class NFCeService
                     }
                 }
             },
-            infNFeSupl = new infNFeSupl
-            {
-                qrCode = string.Empty,
-                urlChave = string.Empty
-            }
+            infNFeSupl = new infNFeSupl { qrCode = string.Empty, urlChave = string.Empty }
         };
     }
 
-    private static det ConstruirItem(ItemNFeRequest item, int numero)
+    /// <summary>Preenche QR Code e URL de consulta pública (DFe.NET — <see cref="ExtinfNFeSupl"/>).</summary>
+    private static void PreencherInformacoesSuplementaresNfce(
+        NFe.Classes.NFe nfce, ConfiguracaoServico config, NFCeEmitirRequest req)
+    {
+        if (nfce.infNFeSupl is null)
+            nfce.infNFeSupl = new infNFeSupl();
+
+        var versaoQr = ParseVersaoQrCode(req.QrCodeVersao);
+        var certificadoCfg = versaoQr == VersaoQrCode.QrCodeVersao3 ? config.Certificado : null;
+
+        nfce.infNFeSupl.qrCode = nfce.infNFeSupl.ObterUrlQrCode(
+            nfce, versaoQr, req.IdCsc.Trim(), req.Csc.Trim(), certificadoCfg);
+
+        nfce.infNFeSupl.urlChave = nfce.infNFeSupl.ObterUrlConsulta(nfce, versaoQr);
+    }
+
+    private static VersaoQrCode ParseVersaoQrCode(string? valor) =>
+        valor?.Trim() switch
+        {
+            "1" => VersaoQrCode.QrCodeVersao1,
+            "3" => VersaoQrCode.QrCodeVersao3,
+            _ => VersaoQrCode.QrCodeVersao2
+        };
+
+    private static det ConstruirItem(ItemNFeRequest item, int numero, int crt)
     {
         return new det
         {
@@ -290,42 +360,21 @@ public class NFCeService
                 vDesc = item.ValorDesconto,
                 indTot = IndicadorTotal.ValorDoItemCompoeTotalNF
             },
-            imposto = new imposto
-            {
-                ICMS = new ICMS
-                {
-                    TipoICMS = new ICMS00
-                    {
-                        orig = (OrigemMercadoria)int.Parse(item.OrigemMercadoria ?? "0"),
-                        CST = Csticms.Cst00,
-                        modBC = DeterminacaoBaseIcms.DbiValorOperacao,
-                        vBC = item.BaseCalculoIcms ?? 0,
-                        pICMS = item.AliquotaIcms ?? 0,
-                        vICMS = item.ValorIcms ?? 0
-                    }
-                },
-                PIS = new PIS
-                {
-                    TipoPIS = new PISAliq
-                    {
-                        CST = (CSTPIS)int.Parse(item.CstPis ?? "07"),
-                        vBC = item.BaseCalculoPis ?? 0,
-                        pPIS = item.AliquotaPis ?? 0,
-                        vPIS = item.ValorPis ?? 0
-                    }
-                },
-                COFINS = new COFINS
-                {
-                    TipoCOFINS = new COFINSAliq
-                    {
-                        CST = (CSTCOFINS)int.Parse(item.CstCofins ?? "07"),
-                        vBC = item.BaseCalculoCofins ?? 0,
-                        pCOFINS = item.AliquotaCofins ?? 0,
-                        vCOFINS = item.ValorCofins ?? 0
-                    }
-                }
-            }
+            imposto = ImpostoItemFactory.Criar(item, crt)
         };
+    }
+
+    private async Task SincronizarNumeracaoAsync(string cnpj, string modelo, string serie, int numero, CancellationToken ct)
+    {
+        try
+        {
+            await _numeracaoService.ConfirmarNumeroAsync(cnpj, modelo, serie, numero, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao sincronizar numeração NFC-e: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Numero={Numero}",
+                cnpj, modelo, serie, numero);
+        }
     }
 
     private async Task RegistrarLogAsync(string cnpj, string modelo, string serie, int numero,

@@ -3,7 +3,7 @@ using FiscalService.Api.Models.Responses;
 namespace FiscalService.Api.Services;
 
 /// <summary>
-/// Geração de DANFE em PDF. Requer biblioteca de renderização compatível com Linux.
+/// Geração de DANFE em PDF. Implementação atual não gera PDF em Linux; ver <c>docs/DANFE-ESTRATEGIA.md</c>.
 /// A dependência NFe.Danfe.Nativo é Windows-only e não pode ser usada neste ambiente.
 /// Para produção, utilize uma solução cross-platform (ex: DanfeSharp, QuestPDF, etc.).
 /// </summary>

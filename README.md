@@ -4,6 +4,11 @@ Microsserviço em **ASP.NET Core 8** para emissão de documentos fiscais eletrô
 
 Compatível com **Docker/Linux** — sem dependência de Windows ou interface gráfica.
 
+> **Visão completa de capacidades:** [`docs/CAPACIDADES.md`](docs/CAPACIDADES.md)
+> · Plano: [`PLANNING.md`](PLANNING.md) · Status: [`PROGRESS.md`](PROGRESS.md)
+> · Smoke test: [`docs/SMOKE-HOMOLOGACAO.md`](docs/SMOKE-HOMOLOGACAO.md)
+> · Estratégia DANFE: [`docs/DANFE-ESTRATEGIA.md`](docs/DANFE-ESTRATEGIA.md)
+
 ---
 
 ## Documentos Suportados
@@ -60,7 +65,8 @@ O serviço ficará disponível em `http://localhost:5555`.
 - **Dockerfile:** `src/FiscalService.Api/Dockerfile`.
 - **Porta do container:** `8080` (mapeie a porta pública do painel para `8080`).
 - **Variáveis de ambiente (mínimo):** `ApiKey`, `Database__ConnectionString` (Postgres gerenciado ou URL interna do painel). Opcionalmente `FISCAL__Ambiente`, `FISCAL__TimeoutWs`, etc., como no `docker-compose.yml`.
-- **Persistência:** monte volumes ou disco persistente em `/app/xmls`, `/app/certificados` e `/app/logs` se quiser reter XMLs, certificados e logs entre deploys.
+- **Persistência:** monte volumes ou disco persistente em `/app/xmls`, `/app/certificados` e `/app/logs` se quiser reter XMLs, certificados e logs entre deploys. Sem volume em `/app/logs`, o app continua no **console** (sink de arquivo é ignorado se o diretório não for gravável). Configure **backup** do volume do Postgres no painel (snapshot ou dump agendado).
+- **Checklist pós-deploy:** ver [docs/SMOKE-HOMOLOGACAO.md](docs/SMOKE-HOMOLOGACAO.md).
 
 ### 4. Verificar saúde
 
@@ -78,6 +84,16 @@ Resposta esperada:
   "schemas": "ok"
 }
 ```
+
+---
+
+## CI e validação de entrada
+
+No GitHub Actions (`.github/workflows/ci.yml`): `dotnet restore`, `dotnet build` e `dotnet test` na solução, mais `docker build` com `src/FiscalService.Api/Dockerfile` a partir da raiz do repositório. O Swagger em Development lista respostas comuns (400, 401, 422, 429) em cada operação.
+
+Além das **DataAnnotations** nos DTOs, a API usa **FluentValidation** (`FiscalService.Api.Validation`): regras adicionais são aplicadas automaticamente e entram no `ModelState` (respostas `400` com detalhes). Testes unitários dos validadores: `tests/FiscalService.Api.Tests`.
+
+**Integração:** `tests/FiscalService.Api.IntegrationTests` sobe PostgreSQL com **Testcontainers**, aplica `MigrateAsync` e cobre `NumeracaoService`. Se `docker info` não estiver disponível na máquina, esses testes são **ignorados** (SkippableFact); no CI (Ubuntu + Docker) eles devem executar de fato.
 
 ---
 
@@ -106,16 +122,25 @@ A URL de escuta segue `launchSettings.json` / `ASPNETCORE_URLS` (ex.: `https://l
 | Variável | Obrigatória | Descrição |
 |----------|-------------|-----------|
 | `API_KEY` | Sim* | Valor do header `X-Api-Key`. É copiada para a configuração `ApiKey` no startup. |
-| `DB_PASSWORD` | Sim* | Senha Npgsql. Se `Database__ConnectionString` **não** existir, monta `Host=localhost;Port=5432;Database=fiscal_db;Username=fiscal_user;Password=…`. |
-| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` | Não | Ajustam a montagem local da connection string (padrão: `localhost`, `5432`, `fiscal_db`, `fiscal_user`). |
-| `Database__ConnectionString` | Não | Se definida, **substitui** a montagem por `DB_PASSWORD` (útil para URLs/host diferentes). |
+| `API_KEY_PREVIOUS` | Não | Durante rotação: mesclada com `ApiKey` no startup para aceitar chave nova e antiga. |
+| `RateLimiting__Enabled` | Não | `false` desliga o limite global por IP (padrão: ligado). |
+| `RateLimiting__PermitLimit` | Não | Máximo de requisições por IP por janela (padrão: 180). |
+| `RateLimiting__WindowSeconds` | Não | Duração da janela em segundos (padrão: 60). |
+| `DATABASE_URL` | Não | URL `postgres://` ou `postgresql://` — convertida para `Database__ConnectionString` (Npgsql). Tem precedência sobre a montagem por senha. |
+| `DB_PASSWORD` | Sim* | Senha do usuário Postgres **ou** URL `postgres://` (legado): se for URL, o app converte. Se for só senha, monta `Host=localhost;…` com `DB_*`. |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` | Não | Ajustam a montagem local quando `DB_PASSWORD` **não** é URL (padrão: `localhost`, `5432`, `fiscal_db`, `fiscal_user`). |
+| `Database__ConnectionString` | Não | Se definida, **substitui** toda montagem automática (formato parâmetros Npgsql). |
 | `SERVICE_PORT` | Não | Usada pelo **Docker Compose** para publicar a API (`${SERVICE_PORT:-5555}`). |
 | `FISCAL_AMBIENTE` | Não | Mapeada para `Fiscal__Ambiente` (`Homologacao` ou `Producao`). |
 | `FISCAL_TIMEOUT_WS` | Não | Mapeada para `Fiscal__TimeoutWs` (segundos). |
+| `Serilog__File__Disabled` | Não | `true` força apenas console (sem tentar arquivo). |
+| `Serilog__File__Path` | Não | Sobrescreve `Serilog:File:Path` (caminho do log em disco). |
+| `OpenTelemetry__Enabled` | Não | `true` liga exportação OTLP (exige endpoint). |
+| `OpenTelemetry__OtlpEndpoint` | Não | URL absoluta do coletor (ex.: `http://localhost:4317`). Alternativa: `OTEL_EXPORTER_OTLP_ENDPOINT`. |
 
 \*Obrigatória para a API aceitar chamadas autenticadas e para conectar ao banco com o template padrão.
 
-Detalhes e exemplos: `.env.example`.
+Detalhes e exemplos: `.env.example`. Checklist de homologação: [docs/SMOKE-HOMOLOGACAO.md](docs/SMOKE-HOMOLOGACAO.md).
 
 ---
 
@@ -128,6 +153,27 @@ X-Api-Key: <sua-chave-configurada-em-API_KEY>
 ```
 
 Sem o header ou com chave inválida, retorna `401 Unauthorized`.
+
+**Rotação de chave:** em `ApiKey` (ou `API_KEY`) você pode informar **várias** chaves separadas por vírgula, pipe ou ponto-e-vírgula; qualquer uma é aceita. Opcionalmente use `API_KEY_PREVIOUS` no `.env` durante a troca: o bootstrap concatena com a chave atual para não derrubar clientes que ainda enviam a chave antiga.
+
+**Limite de taxa:** por padrão há um *rate limit* global por endereço IP (janela fixa; `/health` não conta). Em caso de excesso, resposta `429` com JSON `erro.tipo = LimiteExcedido`. Ajuste em `RateLimiting` no `appsettings.json` ou via variáveis `RateLimiting__*`.
+
+---
+
+## Tributação (ICMS / Simples Nacional)
+
+`configuracaoEmitente.crt`: **1 ou 2** = Simples Nacional, **3** = regime normal. Por item do XML:
+
+- **CRT 3:** informe `cstIcms` (`00`, `40`, `41`, `50`, `60`; CST não suportado usa `00`). Campos opcionais: ST, desoneração, FCP retido, etc., em `ItemNFeRequest`.
+- **CRT 1 ou 2:** informe `csosnIcms` (`101`, `102`, `103`, `201`, `202`, `203`, `500`, `900`; padrão `102`). ST / crédito SN usam os mesmos campos opcionais do item quando aplicável.
+
+PIS/COFINS seguem `cstPis` / `cstCofins` com bases e alíquotas (grupo com alíquota).
+
+---
+
+## Observabilidade (OpenTelemetry)
+
+Com `OpenTelemetry:Enabled=true` **ou** `OTEL_EXPORTER_OTLP_ENDPOINT` definida, e um endpoint OTLP absoluto (`OpenTelemetry:OtlpEndpoint` ou env), a API exporta **traces** (ASP.NET Core + `HttpClient`) e **métricas**, incluindo o contador `fiscal.sefaz.outcomes` (tags `operation`, `sucesso`, `cstat`) alimentado automaticamente nas respostas `FiscalResponse`.
 
 ---
 
@@ -167,6 +213,8 @@ Sem o header ou com chave inválida, retorna `401 Unauthorized`.
 | POST | `/api/mdfe/cancelar` | Cancela um MDF-e |
 
 ### DANFE / PDF
+
+Contrato e opções de implementação multiplataforma: [docs/DANFE-ESTRATEGIA.md](docs/DANFE-ESTRATEGIA.md).
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
@@ -291,11 +339,20 @@ curl -X POST http://localhost:5555/api/nfe/emitir \
   },
   "Database": {
     "ConnectionString": "Host=...;Database=fiscal_db;Username=...;Password=..."
+  },
+  "Serilog": {
+    "WriteTo": [ { "Name": "Console" } ],
+    "File": {
+      "Path": "/app/logs/fiscal-.log",
+      "RollingInterval": "Day",
+      "RetainedFileCountLimit": 30,
+      "Disabled": false
+    }
   }
 }
 ```
 
-### Variáveis de ambiente (Docker Compose)
+Logs em arquivo: o trecho `Serilog:File` só vira sink se o diretório existir e for gravável; senão o app segue só com **Console** (sem derrubar o host). Para forçar só console, use `Serilog__File__Disabled=true` no ambiente.
 
 O `docker-compose.yml` lê o `.env` da raiz e injeta no container (formato ASP.NET `__`):
 
@@ -328,7 +385,7 @@ Você também pode definir `Database__ConnectionString` completa no compose, se 
 - **XMLs autorizados**: são documentos fiscais legais. Os volumes devem ter backup adequado.
 - **Thread-safety**: os serviços de emissão são instanciados como `Transient` porque o DFe.NET não é thread-safe.
 - **Numeração**: o `NumeracaoService` usa `SELECT FOR UPDATE` (PostgreSQL) para garantir atomicidade.
-- **DANFE**: no Linux o endpoint responde como não suportado até integrar um gerador multiplataforma (o pacote nativo histórico é voltado a Windows).
+- **DANFE**: no Linux o endpoint pode responder `NaoSuportado` até integrar um gerador PDF multiplataforma — ver [docs/DANFE-ESTRATEGIA.md](docs/DANFE-ESTRATEGIA.md).
 - **Reforma Tributária**: manter o pacote `Zeus.Net.NFe.NFCe` sempre na versão mais recente.
 
 ---

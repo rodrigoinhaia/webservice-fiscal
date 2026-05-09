@@ -1,3 +1,5 @@
+using FiscalService.Api.Configuration;
+
 namespace FiscalService.Api.Middlewares;
 
 public sealed class ApiKeyMiddleware
@@ -43,7 +45,7 @@ public sealed class ApiKeyMiddleware
 
         var configuredKey = _configuration["ApiKey"];
 
-        if (string.IsNullOrWhiteSpace(configuredKey) || !string.Equals(extractedApiKey, configuredKey, StringComparison.Ordinal))
+        if (!ApiKeyRing.Matches(configuredKey, extractedApiKey!))
         {
             _logger.LogWarning("API Key inválida recebida de {IP}", context.Connection.RemoteIpAddress);
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;

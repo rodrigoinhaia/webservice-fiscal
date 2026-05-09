@@ -11,6 +11,7 @@ using CTe.Classes.Informacoes.Remetente;
 using CTe.Classes.Informacoes.Tipos;
 using CTe.Classes.Informacoes.Valores;
 using CTe.Classes.Servicos.Recepcao.Retorno;
+using CTe.Servicos.ConsultaStatus;
 using CTe.Servicos.EnviarCte;
 using CTe.Servicos.Eventos;
 using CTe.Utils.CTe;
@@ -33,12 +34,14 @@ public class CTeService
 {
     private readonly FiscalConfig _globalConfig;
     private readonly AppDbContext _db;
+    private readonly NumeracaoService _numeracaoService;
     private readonly ILogger<CTeService> _logger;
 
-    public CTeService(FiscalConfig globalConfig, AppDbContext db, ILogger<CTeService> logger)
+    public CTeService(FiscalConfig globalConfig, AppDbContext db, NumeracaoService numeracaoService, ILogger<CTeService> logger)
     {
         _globalConfig = globalConfig;
         _db = db;
+        _numeracaoService = numeracaoService;
         _logger = logger;
     }
 
@@ -73,6 +76,9 @@ public class CTeService
                 request.NumeroNota, chave, protocolo, "Autorizado", cStat, xMotivo,
                 request.ConfiguracaoEmitente.Ambiente, ct);
 
+            await SincronizarNumeracaoAsync(request.ConfiguracaoEmitente.Cnpj, "57",
+                request.Serie, request.NumeroNota, ct);
+
             _logger.LogInformation("CT-e autorizado: Chave={Chave}", chave);
             return FiscalResponse.Ok(chave, protocolo, cStat, xMotivo);
         }
@@ -83,7 +89,44 @@ public class CTeService
         }
     }
 
-    public async Task<FiscalResponse> CancelarAsync(NFeCancelarRequest request, CancellationToken ct = default)
+    public Task<FiscalResponse> CancelarAsync(NFeCancelarRequest request, CancellationToken ct = default) =>
+        Task.FromResult(CancelarCore(request));
+
+    /// <summary>Consulta status do serviço SEFAZ CT-e (modelo 57).</summary>
+    public StatusServicoResponse ConsultarStatusSefaz(ConfiguracaoEmitenteRequest emitente)
+    {
+        try
+        {
+            ConfigurarSingleton(emitente);
+            var ret = new StatusServico().ConsultaStatusV4(ConfiguracaoServico.Instancia);
+
+            if (ret is null)
+                return new StatusServicoResponse { Sucesso = false, Mensagem = "Sem retorno da SEFAZ." };
+
+            return new StatusServicoResponse
+            {
+                Sucesso = ret.cStat == 107,
+                CodigoStatus = ret.cStat.ToString(),
+                Mensagem = ret.xMotivo,
+                Uf = emitente.Uf,
+                Modelo = "CTe",
+                Ambiente = emitente.Ambiente,
+                Timestamp = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao consultar status SEFAZ CT-e");
+            return new StatusServicoResponse
+            {
+                Sucesso = false,
+                Mensagem = ex.Message,
+                Erro = new ErroResponse { Tipo = ClassificarExcecao(ex), Mensagem = ex.Message, Timestamp = DateTime.UtcNow }
+            };
+        }
+    }
+
+    private FiscalResponse CancelarCore(NFeCancelarRequest request)
     {
         try
         {
@@ -237,6 +280,19 @@ public class CTeService
                 }
             }
         };
+    }
+
+    private async Task SincronizarNumeracaoAsync(string cnpj, string modelo, string serie, int numero, CancellationToken ct)
+    {
+        try
+        {
+            await _numeracaoService.ConfirmarNumeroAsync(cnpj, modelo, serie, numero, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao sincronizar numeração CT-e: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Numero={Numero}",
+                cnpj, modelo, serie, numero);
+        }
     }
 
     private async Task RegistrarLogAsync(string cnpj, string modelo, string serie, int numero,
