@@ -58,47 +58,73 @@ public class CertificadoService
     {
         try
         {
-            // Valida antes de salvar
             var bytes = Convert.FromBase64String(request.ConteudoBase64);
-            using var cert = new X509Certificate2(bytes, request.Senha, X509KeyStorageFlags.EphemeralKeySet);
-
-            if (!Directory.Exists(_config.DiretorioCertificados))
-                Directory.CreateDirectory(_config.DiretorioCertificados);
-
-            // Sanitiza o nome do arquivo
-            var nomeSeguro = Path.GetFileName(request.Nome);
-            if (string.IsNullOrWhiteSpace(nomeSeguro) || !nomeSeguro.EndsWith(".pfx", StringComparison.OrdinalIgnoreCase)
-                                                       && !nomeSeguro.EndsWith(".p12", StringComparison.OrdinalIgnoreCase))
-                nomeSeguro = nomeSeguro + ".pfx";
-
-            var pathAbsoluto = Path.Combine(_config.DiretorioCertificados, nomeSeguro);
-            File.WriteAllBytes(pathAbsoluto, bytes);
-
-            _logger.LogInformation("Certificado salvo: {Path}", pathAbsoluto);
-
-            return new CertificadoUploadResponse
-            {
-                Sucesso = true,
-                PathRelativo = nomeSeguro,
-                PathAbsoluto = pathAbsoluto
-            };
+            return SalvarCertificadoValidado(bytes, request.Nome, request.Senha);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao fazer upload de certificado");
-            return new CertificadoUploadResponse
-            {
-                Sucesso = false,
-                Erro = new ErroResponse
-                {
-                    Tipo = "CertificadoInvalido",
-                    Mensagem = "Falha ao processar ou salvar o certificado.",
-                    Detalhe = ex.Message,
-                    Timestamp = DateTime.UtcNow
-                }
-            };
+            _logger.LogError(ex, "Erro ao fazer upload de certificado (JSON)");
+            return RespostaUploadErro(ex);
         }
     }
+
+    /// <summary>Recebe o conteúdo binário do .pfx/.p12 (ex.: multipart) e grava após validar com a senha.</summary>
+    public CertificadoUploadResponse UploadArquivoBinario(byte[] bytes, string nomeArquivo, string senha)
+    {
+        try
+        {
+            return SalvarCertificadoValidado(bytes, nomeArquivo, senha);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao fazer upload de certificado (arquivo)");
+            return RespostaUploadErro(ex);
+        }
+    }
+
+    private CertificadoUploadResponse SalvarCertificadoValidado(byte[] bytes, string nomeInformado, string senha)
+    {
+        ValidarPfx(bytes, senha);
+
+        if (!Directory.Exists(_config.DiretorioCertificados))
+            Directory.CreateDirectory(_config.DiretorioCertificados);
+
+        var nomeSeguro = Path.GetFileName(nomeInformado);
+        if (string.IsNullOrWhiteSpace(nomeSeguro))
+            nomeSeguro = "certificado.pfx";
+        if (!nomeSeguro.EndsWith(".pfx", StringComparison.OrdinalIgnoreCase)
+            && !nomeSeguro.EndsWith(".p12", StringComparison.OrdinalIgnoreCase))
+            nomeSeguro += ".pfx";
+
+        var pathAbsoluto = Path.Combine(_config.DiretorioCertificados, nomeSeguro);
+        File.WriteAllBytes(pathAbsoluto, bytes);
+
+        _logger.LogInformation("Certificado salvo: {Path}", pathAbsoluto);
+
+        return new CertificadoUploadResponse
+        {
+            Sucesso = true,
+            PathRelativo = nomeSeguro,
+            PathAbsoluto = pathAbsoluto
+        };
+    }
+
+    private static void ValidarPfx(byte[] bytes, string senha)
+    {
+        using var cert = new X509Certificate2(bytes, senha, X509KeyStorageFlags.EphemeralKeySet);
+    }
+
+    private static CertificadoUploadResponse RespostaUploadErro(Exception ex) => new()
+    {
+        Sucesso = false,
+        Erro = new ErroResponse
+        {
+            Tipo = "CertificadoInvalido",
+            Mensagem = "Falha ao processar ou salvar o certificado.",
+            Detalhe = ex.Message,
+            Timestamp = DateTime.UtcNow
+        }
+    };
 
     /// <summary>Carrega um X509Certificate2 a partir do path configurado, resolvendo path relativo se necessário.</summary>
     public X509Certificate2 CarregarCertificado(string path, string senha)

@@ -212,21 +212,46 @@ Com `OpenTelemetry:Enabled=true` **ou** `OTEL_EXPORTER_OTLP_ENDPOINT` definida, 
 | POST | `/api/mdfe/encerrar` | Encerra um MDF-e |
 | POST | `/api/mdfe/cancelar` | Cancela um MDF-e |
 
-### DANFE / PDF
+### DANFE / PDF e HTML
 
-Contrato e opções de implementação multiplataforma: [docs/DANFE-ESTRATEGIA.md](docs/DANFE-ESTRATEGIA.md).
+Contrato e opções: [docs/DANFE-ESTRATEGIA.md](docs/DANFE-ESTRATEGIA.md). **PDF** em Linux ainda retorna `NaoSuportado`; **HTML** funciona em qualquer SO (impressão / PDF pelo navegador).
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| POST | `/api/danfe/nfe` | Gera PDF do DANFE NF-e (base64) |
-| POST | `/api/danfe/nfce` | Gera PDF do DANFE NFC-e/cupom (base64) |
+| POST | `/api/danfe/nfe` | Gera PDF do DANFE NF-e (base64) — Linux: `NaoSuportado` |
+| POST | `/api/danfe/nfe/html` | Gera HTML do DANFE NF-e (`html` no JSON ou `?inline=true` → `text/html`) |
+| POST | `/api/danfe/nfce` | Gera PDF do cupom NFC-e (base64) — Linux: `NaoSuportado` |
+| POST | `/api/danfe/nfce/html` | Gera HTML da NFC-e (mesmo corpo que a rota PDF) |
+
+Exemplo HTML direto no navegador (corpo mínimo; ajuste o XML):
+
+```bash
+curl -sS -X POST "http://localhost:5555/api/danfe/nfe/html?inline=true" \
+  -H "X-Api-Key: sua-chave-api" \
+  -H "Content-Type: application/json" \
+  -d "{\"xmlNfeProc\":\"<?xml version=\\\"1.0\\\"?>...nfeProc...\"}" \
+  -o danfe.html
+```
 
 ### Certificado
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | POST | `/api/certificado/validar` | Valida um .pfx e retorna informações |
-| POST | `/api/certificado/upload` | Faz upload de um certificado .pfx |
+| POST | `/api/certificado/upload` | Upload JSON com `.pfx` em Base64 |
+| POST | `/api/certificado/upload-arquivo` | Upload multipart: arquivo `.pfx`/`.p12` + senha (opcional `nome`) |
+
+Exemplo (multipart, sem Base64 no cliente):
+
+```bash
+curl -X POST http://localhost:5555/api/certificado/upload-arquivo \
+  -H "X-Api-Key: sua-chave-api" \
+  -F "arquivo=@/caminho/para/empresa.pfx" \
+  -F "senha=senha_do_pfx" \
+  -F "nome=empresa.pfx"
+```
+
+O campo `nome` é opcional; se omitir, usa o nome do arquivo enviado. A resposta em sucesso é a mesma do upload JSON (`pathRelativo`, `pathAbsoluto`).
 
 ### Numeração
 

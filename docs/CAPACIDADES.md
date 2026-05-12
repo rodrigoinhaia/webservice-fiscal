@@ -21,7 +21,7 @@ eletrônicos brasileiros via [DFe.NET / ZeusAutomacao](https://github.com/ZeusAu
 8. [Numeração Sequencial Atômica](#8-numeração-sequencial-atômica)
 9. [Histórico de Emissões / Auditoria](#9-histórico-de-emissões--auditoria)
 10. [Certificado Digital A1 (.pfx)](#10-certificado-digital-a1-pfx)
-11. [DANFE / PDF](#11-danfe--pdf)
+11. [DANFE / PDF e HTML](#11-danfe--pdf-e-html)
 12. [Segurança](#12-segurança)
 13. [Validação de Entrada](#13-validação-de-entrada)
 14. [Observabilidade](#14-observabilidade)
@@ -137,18 +137,21 @@ Todos exigem header `X-Api-Key` exceto `/health`. Formato JSON em request/respon
 | Método | Rota | Operação |
 |---|---|---|
 | POST | `/api/danfe/nfe` | Gera DANFE NF-e a partir do XML `nfeProc` (PDF base64) |
-| POST | `/api/danfe/nfce` | Gera DANFE NFC-e (cupom) — exige `idCsc` + `csc` |
+| POST | `/api/danfe/nfe/html` | Gera **HTML** imprimível a partir do `nfeProc` (JSON com `html` ou `?inline=true` → `text/html`) |
+| POST | `/api/danfe/nfce` | Gera DANFE NFC-e (cupom) — exige `idCsc` + `csc` (PDF base64) |
+| POST | `/api/danfe/nfce/html` | Gera **HTML** da NFC-e (mesmo corpo que PDF; `idCsc`/`csc` ignorados na montagem) |
 
-> Estado atual: implementação Linux **lança `NotSupportedException`** e responde
-> `sucesso=false` + `erro.tipo="NaoSuportado"`. Veja `docs/DANFE-ESTRATEGIA.md` para
-> contrato e plano de migração para gerador cross-platform.
+> **PDF:** em Linux a implementação nativa **não está disponível** (`sucesso=false`,
+> `erro.tipo="NaoSuportado"`). **HTML:** disponível em qualquer SO — impressão / PDF
+> ficam a cargo do navegador (`Ctrl+P`). Ver `docs/DANFE-ESTRATEGIA.md`.
 
 ### 4.6 Certificado — `CertificadoController` (`/api/certificado`)
 
 | Método | Rota | Operação |
 |---|---|---|
 | POST | `/api/certificado/validar` | Decodifica `.pfx` em base64; retorna CN, CNPJ, validade, emissor, thumbprint |
-| POST | `/api/certificado/upload` | Salva `.pfx` em `Fiscal:DiretorioCertificados` (sanitiza nome, valida senha) |
+| POST | `/api/certificado/upload` | JSON com `.pfx` em Base64; salva em `Fiscal:DiretorioCertificados` (sanitiza nome, valida senha) |
+| POST | `/api/certificado/upload-arquivo` | `multipart/form-data`: campo arquivo (`.pfx`/`.p12`), `senha`; opcional `nome` para o arquivo salvo |
 
 ### 4.7 Numeração — `NumeracaoController` (`/api/numeracao`)
 
@@ -472,9 +475,10 @@ Casos de uso típicos:
   `EphemeralKeySet`, extrai do `Subject` no padrão ICP-Brasil
   `CN=RAZAO SOCIAL:CNPJ` → retorna `cnpj`, `razaoSocial`, `validade`,
   `emissor`, `thumbprint`.
-- **Upload:** valida (mesmo fluxo) e grava bytes em
+- **Upload (JSON):** `ConteudoBase64` + `Nome` + `Senha` — valida (mesmo fluxo) e grava bytes em
   `Fiscal:DiretorioCertificados`. Sanitiza o nome (remove diretórios,
   garante extensão `.pfx`/`.p12`).
+- **Upload (multipart):** `POST /api/certificado/upload-arquivo` — campo `arquivo` (`.pfx`/`.p12`), `senha`; opcional `nome` para o arquivo salvo; mesmo fluxo de validação e gravação.
 - **CarregarCertificado(path, senha):** uso interno; resolve path relativo,
   abre `X509Certificate2` com `EphemeralKeySet | Exportable`.
 
@@ -486,24 +490,43 @@ Resolução de path:
 
 ---
 
-## 11. DANFE / PDF
+## 11. DANFE / PDF e HTML
 
-Endpoints `/api/danfe/nfe` e `/api/danfe/nfce` retornam:
+### 11.1 PDF (base64)
+
+Rotas `POST /api/danfe/nfe` e `POST /api/danfe/nfce` retornam:
 
 ```jsonc
 { "sucesso": true|false, "pdfBase64": "…", "erro": { "tipo": "NaoSuportado", … } }
 ```
 
-Estado atual: **`DanfeService` lança `NotSupportedException` em Linux**. Motivo: o
+Estado atual do **PDF**: **`DanfeService` lança `NotSupportedException` em Linux**. Motivo: o
 pacote `NFe.Danfe.Nativo` é Windows-centric (GDI+/`System.Drawing`).
 
-Caminhos de evolução documentados em `docs/DANFE-ESTRATEGIA.md`:
+### 11.2 HTML (impressão pelo navegador)
+
+Rotas **`POST /api/danfe/nfe/html`** e **`POST /api/danfe/nfce/html`**:
+
+- Corpo: mesmo JSON das rotas PDF (`xmlNfeProc`; NFC-e inclui `idCsc` e `csc` por compatibilidade).
+- **Padrão:** resposta JSON `{ "sucesso": true, "html": "<!DOCTYPE html>…" }` (`DanfeHtmlResponse`).
+- **`?inline=true`:** resposta `Content-Type: text/html; charset=utf-8` com o documento completo (abrir em nova aba / imprimir).
+
+O HTML gerado cobre **identificação (ide)**, **NFref**, **emitente/destinatário** (com endereço), **autXML**,
+**retirada/entrega**, **protocolo**, **itens** (produto, NCM, CFOP, quantidades, **resumo de impostos** por linha),
+**ICMSTot** (e ISSQNtot / retTrib quando existirem), **cobrança/fatura/duplicatas**, **transporte** (retTransp,
+transporta, veículo, volumes), **pagamentos** (cartão quando informado), **compra/exporta**, **infAdic**
+(infCpl, obsCont, obsFisco). Ainda **não** reproduz 100% do desenho gráfico oficial do MOC (ex.: grade de
+campos idêntica ao PDF SEFAZ).
+
+### 11.3 Evolução (PDF profissional)
+
+Caminhos adicionais em `docs/DANFE-ESTRATEGIA.md`:
 
 1. Microsserviço externo dedicado (worker Windows, QuestPDF, etc.).
 2. Biblioteca .NET cross-platform (DanfeSharp / QuestPDF).
 3. Geração local no cliente a partir do `xmlAutorizado`.
 
-Durante a emissão NF-e/NFC-e o DANFE é tentado **best-effort**: se falhar, o
+Durante a emissão NF-e/NFC-e o DANFE **PDF** é tentado **best-effort**: se falhar, o
 `FiscalResponse` ainda é `sucesso=true` com `danfePdfBase64=null` (a operação
 fiscal não é comprometida).
 
@@ -791,7 +814,7 @@ Documentados via `OpenApiCommonResponsesOperationFilter` (Swagger):
 
 | Tema | Estado |
 |---|---|
-| **DANFE PDF em Linux** | Não suportado nativamente. Endpoint responde `NaoSuportado`. Veja `docs/DANFE-ESTRATEGIA.md`. |
+| **DANFE PDF em Linux** | Não suportado nativamente (PDF). **DANFE em HTML** disponível em `/api/danfe/nfe/html` e `/api/danfe/nfce/html`. Veja `docs/DANFE-ESTRATEGIA.md`. |
 | **Certificado A3 / HSM** | Apenas A1 (`.pfx`) está implementado (`TipoCertificado.A1Arquivo`). |
 | **Modais MDF-e ≥ 02** | Construção do modal apenas para **rodoviário** (`MDFeRodo`); demais não montados. |
 | **CT-e tributação** | ICMS00 fixo a 12% no construtor — para cenários ICMS-ST/Reduzido use evolução do `CTeService`. |
@@ -842,7 +865,7 @@ Da seção *Fase 3* do `PLANNING.md` (atualizado conforme o que já foi entregue
 | NFC-e | `src/FiscalService.Api/Services/NFCeService.cs`, `Controllers/NFCeController.cs` |
 | CT-e | `src/FiscalService.Api/Services/CTeService.cs`, `Controllers/CTeController.cs` |
 | MDF-e | `src/FiscalService.Api/Services/MDFeService.cs`, `Controllers/MDFeController.cs` |
-| DANFE | `src/FiscalService.Api/Services/DanfeService.cs`, `Controllers/DanfeController.cs` |
+| DANFE | `src/FiscalService.Api/Services/DanfeService.cs`, `Controllers/DanfeController.cs`, `Services/DanfeHtml/DanfeHtmlRenderer.cs` |
 | Tributação ICMS / PIS / COFINS | `src/FiscalService.Api/Services/Fiscal/ImpostoIcmsMapper.cs`, `ImpostoItemFactory.cs` |
 | UF → IBGE | `src/FiscalService.Api/Helpers/UfHelper.cs` |
 | Validações | `src/FiscalService.Api/Validation/*Validator.cs` |

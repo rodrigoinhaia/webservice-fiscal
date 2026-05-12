@@ -1,4 +1,5 @@
 using FiscalService.Api.Models.Responses;
+using FiscalService.Api.Services.DanfeHtml;
 
 namespace FiscalService.Api.Services;
 
@@ -77,6 +78,58 @@ public class DanfeService
                 {
                     Tipo = ex is NotSupportedException ? "NaoSuportado" : "ErroInterno",
                     Mensagem = "Erro ao gerar PDF do DANFE NFC-e.",
+                    Detalhe = ex.Message,
+                    Timestamp = DateTime.UtcNow
+                }
+            };
+        }
+    }
+
+    /// <summary>DANFE NF-e em HTML (impressão / PDF pelo navegador).</summary>
+    public DanfeHtmlResponse GerarNFeHtmlResponse(string xmlNfeProc)
+    {
+        try
+        {
+            var html = DanfeHtmlRenderer.GerarNFe(xmlNfeProc);
+            return new DanfeHtmlResponse { Sucesso = true, Html = html };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao gerar DANFE NF-e em HTML.");
+            return new DanfeHtmlResponse
+            {
+                Sucesso = false,
+                Erro = new ErroResponse
+                {
+                    Tipo = "ErroInterno",
+                    Mensagem = "Não foi possível gerar o HTML do DANFE a partir do XML informado.",
+                    Detalhe = ex.Message,
+                    Timestamp = DateTime.UtcNow
+                }
+            };
+        }
+    }
+
+    /// <summary>DANFE NFC-e em HTML (impressão / PDF pelo navegador).</summary>
+    public DanfeHtmlResponse GerarNFCeHtmlResponse(string xmlNfeProc, string idCsc, string csc)
+    {
+        _ = idCsc;
+        _ = csc;
+        try
+        {
+            var html = DanfeHtmlRenderer.GerarNFCe(xmlNfeProc);
+            return new DanfeHtmlResponse { Sucesso = true, Html = html };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao gerar DANFE NFC-e em HTML.");
+            return new DanfeHtmlResponse
+            {
+                Sucesso = false,
+                Erro = new ErroResponse
+                {
+                    Tipo = "ErroInterno",
+                    Mensagem = "Não foi possível gerar o HTML a partir do XML informado.",
                     Detalhe = ex.Message,
                     Timestamp = DateTime.UtcNow
                 }

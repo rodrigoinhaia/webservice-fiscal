@@ -39,7 +39,7 @@ Sem header `X-Api-Key`: **401**. Com chave correta: **200** e payload JSON.
 ## 5. Regressão rápida
 
 - Numeração: `GET /api/numeracao/{cnpj}/{modelo}/{serie}` retorna próximo número.
-- Certificado: `POST /api/certificado/validar` com path/senha de teste.
+- Certificado: `POST /api/certificado/validar` (JSON com Base64 + senha) ou `POST /api/certificado/upload-arquivo` (multipart: `arquivo`, `senha`).
 
 ## Critério de “passou”
 
