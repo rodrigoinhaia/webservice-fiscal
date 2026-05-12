@@ -29,6 +29,11 @@ logs/
 # Rider
 .idea/
 
+# Saídas locais de build/teste (dotnet -o alternativo)
+_build_verify/
+_test_out/
+_test_out2/
+
 # OS
 .DS_Store
 Thumbs.db
