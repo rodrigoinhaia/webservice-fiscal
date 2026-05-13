@@ -116,7 +116,7 @@ FiscalService/
 │       ├── Schemas/              ← XSDs do DFe.NET
 │       ├── Program.cs
 │       ├── appsettings.json
-│       └── Dockerfile
+├── Dockerfile                    ← build imagem (contexto = raiz)
 ├── docker-compose.yml
 ├── .env.example
 ├── PLANNING.md

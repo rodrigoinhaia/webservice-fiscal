@@ -4,7 +4,7 @@ services:
   fiscal-service:
     build:
       context: .
-      dockerfile: src/FiscalService.Api/Dockerfile
+      dockerfile: Dockerfile
     image: fiscal-service:latest
     container_name: fiscal-service
     ports:

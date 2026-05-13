@@ -1,7 +1,6 @@
 # ── FiscalService.Api — imagem de produção ───────────────────────────────────
-# Build context: raiz do repositório (onde existem as pastas src/, docker-compose.yml).
-# No Easypanel: aponte o Dockerfile para src/FiscalService.Api/Dockerfile e o contexto
-# de build para a raiz do repo (não use só a pasta FiscalService.Api — os COPY falham).
+# Build context: raiz do repositório (pastas src/, docker-compose.yml).
+# Easypanel e outros painéis costumam usar Dockerfile na raiz — este é o arquivo canônico.
 #
 # Variáveis obrigatórias no painel (ou stack): ApiKey, Database__ConnectionString.
 # Opcionais: FISCAL__* (ver README / docker-compose.yml).
@@ -25,7 +24,6 @@ RUN dotnet publish "FiscalService.Api.csproj" -c Release -o /app/publish /p:UseA
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
-# curl = healthcheck; fontes/libs = compatibilidade com libs gráficas/PDF eventualmente usadas pelo stack DFe
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 \
     libfreetype6 \
@@ -37,15 +35,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Criar diretórios de dados (sobrescritos por volumes em produção)
 RUN mkdir -p /app/xmls /app/schemas /app/certificados /app/logs
 
 COPY --from=publish /app/publish .
 
-# Copiar schemas do DFe.NET para o diretório padrão
 COPY src/FiscalService.Api/Schemas /app/schemas
 
-# Alinha com docker-compose e com o HEALTHCHECK (Easypanel não injeta isso sozinho)
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 

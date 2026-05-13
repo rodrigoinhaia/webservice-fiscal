@@ -62,7 +62,7 @@ O serviço ficará disponível em `http://localhost:5555`.
 ### Easypanel (ou outro painel Docker)
 
 - **Contexto de build:** raiz do repositório (onde está `src/`).
-- **Dockerfile:** `src/FiscalService.Api/Dockerfile`.
+- **Dockerfile:** `Dockerfile` na raiz do repositório (contexto de build = raiz).
 - **Porta do container:** `8080` (mapeie a porta pública do painel para `8080`).
 - **Variáveis de ambiente (mínimo):** `ApiKey`, `Database__ConnectionString` (Postgres gerenciado ou URL interna do painel). Opcionalmente `FISCAL__Ambiente`, `FISCAL__TimeoutWs`, etc., como no `docker-compose.yml`.
 - **Persistência:** monte volumes ou disco persistente em `/app/xmls`, `/app/certificados` e `/app/logs` se quiser reter XMLs, certificados e logs entre deploys. Sem volume em `/app/logs`, o app continua no **console** (sink de arquivo é ignorado se o diretório não for gravável). Configure **backup** do volume do Postgres no painel (snapshot ou dump agendado).
@@ -89,7 +89,7 @@ Resposta esperada:
 
 ## CI e validação de entrada
 
-No GitHub Actions (`.github/workflows/ci.yml`): `dotnet restore`, `dotnet build` e `dotnet test` na solução, mais `docker build` com `src/FiscalService.Api/Dockerfile` a partir da raiz do repositório. O Swagger em Development lista respostas comuns (400, 401, 422, 429) em cada operação.
+No GitHub Actions (`.github/workflows/ci.yml`): `dotnet restore`, `dotnet build` e `dotnet test` na solução, mais `docker build -f Dockerfile .` na raiz do repositório. O Swagger em Development lista respostas comuns (400, 401, 422, 429) em cada operação.
 
 Além das **DataAnnotations** nos DTOs, a API usa **FluentValidation** (`FiscalService.Api.Validation`): regras adicionais são aplicadas automaticamente e entram no `ModelState` (respostas `400` com detalhes). Testes unitários dos validadores: `tests/FiscalService.Api.Tests`.
 

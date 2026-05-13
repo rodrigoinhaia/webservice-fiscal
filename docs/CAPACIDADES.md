@@ -710,7 +710,7 @@ Antes do `WebApplication.CreateBuilder`:
 
 ## 17. Deploy / Docker / Easypanel
 
-### 17.1 Imagem (`src/FiscalService.Api/Dockerfile`)
+### 17.1 Imagem (`Dockerfile` na raiz)
 
 - Multi-stage:
   - **Build:** `mcr.microsoft.com/dotnet/sdk:8.0` (`restore` → `build`).
@@ -740,7 +740,7 @@ Volumes nomeados (persistência): `fiscal_xmls`, `fiscal_certs`, `fiscal_logs`,
 ### 17.3 Easypanel / Painéis Docker
 
 - **Build context:** raiz do repositório (não a pasta do projeto).
-- **Dockerfile:** `src/FiscalService.Api/Dockerfile`.
+- **Dockerfile:** `Dockerfile` na raiz do repositório (contexto de build = raiz).
 - **Porta:** `8080` interna.
 - **Variáveis mínimas:** `ApiKey`, `Database__ConnectionString` (ou `DB_PASSWORD` + helpers).
 - **Persistência:** monte volumes em `/app/xmls`, `/app/certificados`, `/app/logs`.
@@ -759,7 +759,7 @@ Job `build-test-docker` em `ubuntu-latest`:
 2. `dotnet restore FiscalService.sln`
 3. `dotnet build FiscalService.sln --no-restore -c Release`
 4. `dotnet test FiscalService.sln --no-build -c Release`
-5. `docker build -f src/FiscalService.Api/Dockerfile .`
+5. `docker build -f Dockerfile .`
 
 ### 18.2 Testes Unitários — `tests/FiscalService.Api.Tests`
 
@@ -871,4 +871,4 @@ Da seção *Fase 3* do `PLANNING.md` (atualizado conforme o que já foi entregue
 | Validações | `src/FiscalService.Api/Validation/*Validator.cs` |
 | Testes | `tests/FiscalService.Api.Tests/`, `tests/FiscalService.Api.IntegrationTests/` |
 | CI | `.github/workflows/ci.yml` |
-| Docker / Compose | `src/FiscalService.Api/Dockerfile`, `docker-compose.yml` |
+| Docker / Compose | `Dockerfile` (raiz), `docker-compose.yml` |

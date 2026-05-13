@@ -40,5 +40,5 @@ cp -r /tmp/DFeNET/NFe.AppTeste/Schemas/* /app/schemas/
 
 ## Nota sobre Docker
 
-No `Dockerfile`, os schemas são copiados para `/app/schemas/` durante o build. 
+No `Dockerfile` na raiz do repositório, os schemas são copiados para `/app/schemas/` durante o build. 
 Em produção, o diretório é montado como volume e deve ser populado antes do primeiro uso.
