@@ -42,7 +42,7 @@ public class CertificadoController : ControllerBase
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(6 * 1024 * 1024)]
     public async Task<IActionResult> UploadArquivo(
-        [FromForm] IFormFile? arquivo,
+        IFormFile? arquivo,
         [FromForm] string? senha,
         [FromForm] string? nome,
         CancellationToken cancellationToken)
