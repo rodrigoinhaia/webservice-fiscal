@@ -28,6 +28,7 @@ using NFe.Classes.Informacoes.Transporte;
 using NFe.Classes.Servicos.Tipos;
 using NFe.Servicos;
 using NFe.Utils;
+using NFe.Utils.NFe;
 
 namespace FiscalService.Api.Services;
 
@@ -65,11 +66,13 @@ public class NFeService
         try
         {
             request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+            NFeEmissaoPreconditions.ValidarEnderecoEmitenteOuLancar(request.ConfiguracaoEmitente);
             ImpostoTributacaoCatalog.ValidarItensOuLancar(request.ConfiguracaoEmitente.Crt, request.Itens);
             NFeTotaisCalculator.ValidarConsistenciaOuLancar(request.Itens);
 
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente, request.TipoEmissao);
             var nfe = ConstruirNFe(request, config);
+            nfe.Assina(config);
 
             using var servicos = new ServicosNFe(config);
             var idLote = (int)(Math.Abs(DateTime.UtcNow.Ticks) % int.MaxValue);
@@ -355,6 +358,9 @@ public class NFeService
         config.Certificado.Arquivo = certPath;
         config.Certificado.Senha = emitente.CertificadoSenha;
 
+        // DF-e layout 4.00: sem VersaoLayout o DFe.NET não resolve URLs (cai na 310 / versão vazia).
+        config.VersaoLayout = VersaoServico.Versao400;
+
         return config;
     }
 
@@ -371,6 +377,7 @@ public class NFeService
         var ideNota = new ide
         {
                     cUF = uf,
+                    cNF = NFeEmissaoPreconditions.GerarCodigoNumericoNFe(),
                     natOp = req.NaturezaOperacao,
                     mod = ModeloDocumento.NFe,
                     serie = int.Parse(req.Serie),
@@ -408,11 +415,9 @@ public class NFeService
                     CNPJ = emitente.Cnpj,
                     xNome = emitente.RazaoSocial,
                     xFant = emitente.NomeFantasia,
-                    IE = emitente.Ie,
-                    CRT = (CRT)emitente.Crt,
-                    enderEmit = emitente.Endereco is null ? null : new enderEmit
+                    enderEmit = new enderEmit
                     {
-                        xLgr = emitente.Endereco.Logradouro ?? string.Empty,
+                        xLgr = emitente.Endereco!.Logradouro ?? string.Empty,
                         nro = emitente.Endereco.Numero ?? string.Empty,
                         xCpl = emitente.Endereco.Complemento,
                         xBairro = emitente.Endereco.Bairro ?? string.Empty,
@@ -423,7 +428,9 @@ public class NFeService
                         cPais = int.TryParse(emitente.Endereco.CodigoPais, out var cPaisEmit) ? cPaisEmit : 1058,
                         xPais = emitente.Endereco.Pais ?? "Brasil",
                         fone = long.TryParse(emitente.Endereco.Telefone, out var foneEmit) ? foneEmit : (long?)null
-                    }
+                    },
+                    IE = emitente.Ie,
+                    CRT = (CRT)emitente.Crt
                 },
                 dest = ConstruirDestinatario(req.Destinatario),
                 det = itens,

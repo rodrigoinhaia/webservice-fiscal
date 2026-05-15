@@ -65,6 +65,7 @@ public class NFCeService
         try
         {
             request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+            NFeEmissaoPreconditions.ValidarEnderecoEmitenteOuLancar(request.ConfiguracaoEmitente);
             ImpostoTributacaoCatalog.ValidarItensOuLancar(request.ConfiguracaoEmitente.Crt, request.Itens);
             NFeTotaisCalculator.ValidarConsistenciaOuLancar(request.Itens);
 
@@ -219,6 +220,8 @@ public class NFCeService
         config.Certificado.Arquivo = certPath;
         config.Certificado.Senha = emitente.CertificadoSenha;
 
+        config.VersaoLayout = VersaoServico.Versao400;
+
         return config;
     }
 
@@ -240,6 +243,7 @@ public class NFCeService
                 ide = new ide
                 {
                     cUF = uf,
+                    cNF = NFeEmissaoPreconditions.GerarCodigoNumericoNFe(),
                     natOp = req.NaturezaOperacao,
                     mod = ModeloDocumento.NFCe,
                     serie = int.Parse(req.Serie),
@@ -262,11 +266,9 @@ public class NFCeService
                     CNPJ = emitente.Cnpj,
                     xNome = emitente.RazaoSocial,
                     xFant = emitente.NomeFantasia,
-                    IE = emitente.Ie,
-                    CRT = (CRT)emitente.Crt,
-                    enderEmit = emitente.Endereco is null ? null : new enderEmit
+                    enderEmit = new enderEmit
                     {
-                        xLgr = emitente.Endereco.Logradouro ?? string.Empty,
+                        xLgr = emitente.Endereco!.Logradouro ?? string.Empty,
                         nro = emitente.Endereco.Numero ?? string.Empty,
                         xCpl = emitente.Endereco.Complemento,
                         xBairro = emitente.Endereco.Bairro ?? string.Empty,
@@ -277,7 +279,9 @@ public class NFCeService
                         cPais = 1058,
                         xPais = "Brasil",
                         fone = long.TryParse(emitente.Endereco.Telefone, out var foneEmit) ? foneEmit : (long?)null
-                    }
+                    },
+                    IE = emitente.Ie,
+                    CRT = (CRT)emitente.Crt
                 },
                 det = itens,
                 total = new total

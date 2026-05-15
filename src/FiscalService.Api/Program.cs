@@ -25,6 +25,42 @@ Log.Information("FiscalService iniciando...");
 
 try
 {
+    string ResolveDiretorioSchemas(string configured)
+    {
+        if (!string.IsNullOrWhiteSpace(configured) && Directory.Exists(configured))
+            return Path.GetFullPath(configured);
+
+        var cwd = Directory.GetCurrentDirectory();
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Schemas"),
+            Path.Combine(cwd, "Schemas"),
+            Path.Combine(cwd, "src", "FiscalService.Api", "Schemas"),
+        };
+
+        foreach (var d in candidates)
+        {
+            try
+            {
+                var full = Path.GetFullPath(d);
+                if (Directory.Exists(full))
+                {
+                    Log.Information("Fiscal:DiretorioSchemas resolvido para {Path} (fallback; config era {Config})", full, configured);
+                    return full;
+                }
+            }
+            catch
+            {
+                // ignora path inválido
+            }
+        }
+
+        Log.Warning("Fiscal:DiretorioSchemas {Config} inexistente e nenhum fallback com pasta Schemas encontrado.",
+            configured ?? "(vazio)");
+
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Schemas"));
+    }
+
     // .env na raiz do repositório (ou acima do diretório de trabalho) + aliases API_KEY/DB_PASSWORD → config ASP.NET
     EnvBootstrap.Apply();
 
@@ -52,7 +88,8 @@ try
     if (!Path.IsPathRooted(fiscalConfig.DiretorioCertificados))
         fiscalConfig.DiretorioCertificados = Path.Combine(Directory.GetCurrentDirectory(), fiscalConfig.DiretorioCertificados);
     if (!Path.IsPathRooted(fiscalConfig.DiretorioSchemas))
-        fiscalConfig.DiretorioSchemas = Path.Combine(Directory.GetCurrentDirectory(), "Schemas");
+        fiscalConfig.DiretorioSchemas = Path.Combine(Directory.GetCurrentDirectory(), fiscalConfig.DiretorioSchemas);
+    fiscalConfig.DiretorioSchemas = ResolveDiretorioSchemas(fiscalConfig.DiretorioSchemas);
 
     builder.Services.AddSingleton(fiscalConfig);
 

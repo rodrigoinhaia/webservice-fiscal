@@ -37,6 +37,7 @@ _test_out2/
 # Evidências do smoke (scripts/smoke-homologacao.ps1)
 scripts/smoke-output/*.jsonl
 scripts/config/homologacao.env
+docs/exemplos/emitente/cadastro-homologacao.local.json
 
 # OS
 .DS_Store

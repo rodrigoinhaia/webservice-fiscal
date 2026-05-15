@@ -7,6 +7,8 @@
 | `cadastro-homologacao.json` | Modelo para `POST /api/emitentes` |
 | `cadastro-homologacao.template.json` | Mesmo conteúdo com placeholders explícitos |
 
+⚠️ **Segurança:** não coloque a senha real do PFX no JSON versionado no Git. Use o placeholder `DEFINA_A_SENHA_NO_POST_NAO_VERSIONE` no repo e substitua só no Postman, script ou cópia local (ex.: `cadastro-homologacao.local.json` fora do controle de versão).
+
 ## O que ajustar antes do smoke
 
 1. **cnpj** — 14 dígitos do certificado A1 de homologação.

@@ -195,6 +195,8 @@ public class NFeDfeService
         config.Certificado.Arquivo = certPath;
         config.Certificado.Senha = emitente.CertificadoSenha;
 
+        config.VersaoLayout = VersaoServico.Versao400;
+
         return config;
     }
 
