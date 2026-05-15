@@ -9,6 +9,14 @@ JSON prontos para `POST /api/nfe/emitir` e correlatos. Ajuste CNPJ, certificado 
 | [nfe/crt3-lucro-real-icms10-st.json](nfe/crt3-lucro-real-icms10-st.json) | 3 | Regime normal — CST 10 + ST (LR) |
 | [nfe/crt3-icms20-reducao-base.json](nfe/crt3-icms20-reducao-base.json) | 3 | CST 20 — redução de base |
 | [nfe/crt3-item-com-ipi.json](nfe/crt3-item-com-ipi.json) | 3 | Item com IPI tributado |
+| [nfe/crt3-interestadual-difal.json](nfe/crt3-interestadual-difal.json) | 3 | Interestadual com DIFAL (`ICMSUFDest`) |
+| [nfe/emitir-via-emitente-cnpj.json](nfe/emitir-via-emitente-cnpj.json) | — | Emissão só com `emitenteCnpj` (cadastro prévio) |
+
+### Emitente (cadastro)
+
+| Arquivo | Uso |
+|---------|-----|
+| [emitente/cadastro-homologacao.json](emitente/cadastro-homologacao.json) | `POST /api/emitentes` |
 
 Matriz CST/CSOSN: [`../TRIBUTACAO-MATRIZ.md`](../TRIBUTACAO-MATRIZ.md).  
 Referência DFe.NET: [ZeusAutomacao/DFe.NET](https://github.com/ZeusAutomacao/DFe.NET).

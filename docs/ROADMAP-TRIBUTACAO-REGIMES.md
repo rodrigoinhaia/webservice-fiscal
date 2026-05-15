@@ -58,7 +58,7 @@ Objetivo: cobrir CSTs usados em operações comuns de LP/LR sem fallback silenci
 | 1.4 | [x] **ICMS51** — diferimento | `valorIcmsOperacao`, `percentualDiferimentoIcms`, `valorIcmsDiferido` | `ICMS51` |
 | 1.5 | [x] **ICMS70** — redução + ST | Combinar redução e ST | `ICMS70` |
 | 1.6 | [x] **ICMS90** — outros | Grupo flexível conforme payload | `ICMS90` |
-| 1.7 | [ ] **ICMSPart** / partilha (DIFAL) quando `idDest` interestadual consumidor final | `ICMSUFDest`, totais `ICMSUFDest` | NT 2015/003 — classes UFDest |
+| 1.7 | [~] **ICMSPart** / partilha (DIFAL) quando `idDest` interestadual consumidor final | `ICMSUFDest` por item + totais básicos | NT 2015/003 — classes UFDest |
 | 1.8 | [ ] **FCP** (`ICMS00` + campos FCP, ST com FCP) | Campos `vFCP`, `vFCPST` nos totais | Grupos FCP no layout 4.0 |
 | 1.9 | [x] Rejeitar CST não implementado com **400** explícito (não fallback para `00`) | FluentValidation + `TributacaoNaoSuportadaException` | — |
 | 1.10 | [x] Testes unitários por CST (espelhar `ImpostoIcmsMapperTests`) | +1 teste por CST novo | — |
@@ -126,11 +126,11 @@ Objetivo: operação em produção sem reenviar certificado/senha em toda nota.
 
 | # | Tarefa | Entregável |
 |---|--------|------------|
-| 6.1 | [ ] Entidade **`Emitente`** (CNPJ, razão, IE, CRT default, UF, paths) + migration | `Data/Entities/Emitente.cs` |
-| 6.2 | [ ] Referência certificado por emitente (path + secret ref / senha criptografada) | `EmitenteCertificadoService` |
-| 6.3 | [ ] `POST /api/emitentes` CRUD + `GET /api/emitentes/{cnpj}` | Controller fino |
-| 6.4 | [ ] Emissão por **`emitenteId` ou `cnpj`** com payload reduzido (itens + destinatário) | `NFeEmitirRequest` v2 ou query flag |
-| 6.5 | [ ] Validar **CNPJ do certificado = CNPJ do emitente** na emissão | 422 `CertificadoCnpjDivergente` |
+| 6.1 | [x] Entidade **`Emitente`** (CNPJ, razão, IE, CRT default, UF, paths) + migration | `Data/Entities/Emitente.cs` + `AddEmitentes` |
+| 6.2 | [x] Referência certificado por emitente (path + senha criptografada) | `CertificadoSenhaProtector` |
+| 6.3 | [x] `POST/GET/PUT/DELETE /api/emitentes` | `EmitentesController` |
+| 6.4 | [x] Emissão por **`emitenteCnpj`** com payload reduzido (NF-e/NFC-e + eventos NF-e) | `IEmitenteConfigSource` |
+| 6.5 | [x] Validar **CNPJ do certificado = CNPJ do emitente** no cadastro/atualização | `validarCnpjCertificado` |
 | 6.6 | [ ] Health check: alerta certificado a expirar (&lt; 30 dias) | `/health` degradado |
 
 ---

@@ -110,6 +110,10 @@ try
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(connectionString));
 
+    builder.Services.AddDataProtection();
+    builder.Services.AddScoped<CertificadoSenhaProtector>();
+    builder.Services.AddScoped<EmitenteService>();
+
     // ── Health Checks ────────────────────────────────────────────────────────
     builder.Services.AddHealthChecks()
         .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "db", "sql" });

@@ -41,6 +41,7 @@ public class NFeService
     private readonly AppDbContext _db;
     private readonly DanfeService _danfeService;
     private readonly NumeracaoService _numeracaoService;
+    private readonly EmitenteService _emitenteService;
     private readonly ILogger<NFeService> _logger;
 
     public NFeService(
@@ -48,12 +49,14 @@ public class NFeService
         AppDbContext db,
         DanfeService danfeService,
         NumeracaoService numeracaoService,
+        EmitenteService emitenteService,
         ILogger<NFeService> logger)
     {
         _globalConfig = globalConfig;
         _db = db;
         _danfeService = danfeService;
         _numeracaoService = numeracaoService;
+        _emitenteService = emitenteService;
         _logger = logger;
     }
 
@@ -61,6 +64,9 @@ public class NFeService
     {
         try
         {
+            request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+            ImpostoTributacaoCatalog.ValidarItensOuLancar(request.ConfiguracaoEmitente.Crt, request.Itens);
+
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
             var nfe = ConstruirNFe(request, config);
 
@@ -106,7 +112,8 @@ public class NFeService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao emitir NF-e para CNPJ={CNPJ}", request.ConfiguracaoEmitente.Cnpj);
+            _logger.LogError(ex, "Erro ao emitir NF-e para CNPJ={CNPJ}",
+                request.ConfiguracaoEmitente?.Cnpj ?? request.EmitenteCnpj);
             return FiscalResponse.Falha(ClassificarExcecao(ex), ex.Message, ex.ToString());
         }
     }
@@ -115,6 +122,7 @@ public class NFeService
     {
         try
         {
+            request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
 
             using var servicos = new ServicosNFe(config);
@@ -148,14 +156,17 @@ public class NFeService
         }
     }
 
-    public Task<FiscalResponse> CartaCorrecaoAsync(NFeCartaCorrecaoRequest request, CancellationToken ct = default) =>
-        Task.FromResult(CartaCorrecaoCore(request));
+    public async Task<FiscalResponse> CartaCorrecaoAsync(NFeCartaCorrecaoRequest request, CancellationToken ct = default)
+    {
+        request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+        return CartaCorrecaoCore(request);
+    }
 
     private FiscalResponse CartaCorrecaoCore(NFeCartaCorrecaoRequest request)
     {
         try
         {
-            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
+            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente!);
 
             using var servicos = new ServicosNFe(config);
             var idLote = (int)(Math.Abs(DateTime.UtcNow.Ticks) % int.MaxValue);
@@ -187,14 +198,17 @@ public class NFeService
         }
     }
 
-    public Task<FiscalResponse> ConsultarAsync(NFeConsultarRequest request, CancellationToken ct = default) =>
-        Task.FromResult(ConsultarCore(request));
+    public async Task<FiscalResponse> ConsultarAsync(NFeConsultarRequest request, CancellationToken ct = default)
+    {
+        request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+        return ConsultarCore(request);
+    }
 
     private FiscalResponse ConsultarCore(NFeConsultarRequest request)
     {
         try
         {
-            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
+            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente!);
 
             using var servicos = new ServicosNFe(config);
             var retorno = servicos.NfeConsultaProtocolo(request.ChaveAcesso);
@@ -224,14 +238,17 @@ public class NFeService
         }
     }
 
-    public Task<FiscalResponse> InutilizarAsync(NFeInutilizarRequest request, CancellationToken ct = default) =>
-        Task.FromResult(InutilizarCore(request));
+    public async Task<FiscalResponse> InutilizarAsync(NFeInutilizarRequest request, CancellationToken ct = default)
+    {
+        request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+        return InutilizarCore(request);
+    }
 
     private FiscalResponse InutilizarCore(NFeInutilizarRequest request)
     {
         try
         {
-            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
+            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente!);
 
             using var servicos = new ServicosNFe(config);
             var retorno = servicos.NfeInutilizacao(
@@ -415,7 +432,10 @@ public class NFeService
                         vCOFINS = totalNota.Cofins,
                         vOutro = totalNota.Outras,
                         vNF = totalNota.TotalNota,
-                        vTotTrib = 0
+                        vTotTrib = 0,
+                        vFCPUFDest = totalNota.FcpUfDest > 0 ? totalNota.FcpUfDest : null,
+                        vICMSUFDest = totalNota.IcmsUfDest > 0 ? totalNota.IcmsUfDest : null,
+                        vICMSUFRemet = totalNota.IcmsUfRemet > 0 ? totalNota.IcmsUfRemet : null
                     }
                 },
                 transp = new transp
@@ -509,7 +529,8 @@ public class NFeService
     }
 
     private static (decimal BaseIcms, decimal Icms, decimal Produtos, decimal Frete, decimal Seguro,
-                    decimal Desconto, decimal Ipi, decimal Pis, decimal Cofins, decimal Outras, decimal TotalNota)
+                    decimal Desconto, decimal Ipi, decimal Pis, decimal Cofins, decimal Outras, decimal TotalNota,
+                    decimal FcpUfDest, decimal IcmsUfDest, decimal IcmsUfRemet)
         CalcularTotais(List<ItemNFeRequest> itens)
     {
         return (
@@ -527,7 +548,10 @@ public class NFeService
                 - itens.Sum(i => i.ValorDesconto ?? 0)
                 + itens.Sum(i => i.ValorFrete ?? 0)
                 + itens.Sum(i => i.ValorSeguro ?? 0)
-                + itens.Sum(i => i.ValorOutrasDespesas ?? 0)
+                + itens.Sum(i => i.ValorOutrasDespesas ?? 0),
+            FcpUfDest: itens.Sum(i => i.ValorFcpUfDest ?? 0),
+            IcmsUfDest: itens.Sum(i => i.ValorIcmsUfDest ?? 0),
+            IcmsUfRemet: itens.Sum(i => i.ValorIcmsUfRemet ?? 0)
         );
     }
 
@@ -596,6 +620,10 @@ public class NFeService
     {
         if (ex is TributacaoNaoSuportadaException)
             return "TributacaoInvalida";
+        if (ex is KeyNotFoundException)
+            return "EmitenteNaoEncontrado";
+        if (ex is ArgumentException)
+            return "Validacao";
 
         var msg = ex.Message.ToLowerInvariant();
         if (msg.Contains("certificado") || msg.Contains("pfx") || msg.Contains("senha"))

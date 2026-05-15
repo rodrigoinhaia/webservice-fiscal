@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<EmissaoLog> EmissaoLogs { get; set; } = null!;
     public DbSet<NumeracaoSequencial> NumeracoesSequenciais { get; set; } = null!;
+    public DbSet<Emitente> Emitentes { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,6 +36,13 @@ public class AppDbContext : DbContext
             // Índice por status para dashboards operacionais
             entity.HasIndex(e => e.Status)
                   .HasDatabaseName("ix_emissao_logs_status");
+        });
+
+        modelBuilder.Entity<Emitente>(entity =>
+        {
+            entity.HasIndex(e => e.Cnpj)
+                  .IsUnique()
+                  .HasDatabaseName("ix_emitentes_cnpj");
         });
     }
 }

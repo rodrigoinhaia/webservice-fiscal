@@ -2,10 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FiscalService.Api.Models.Requests;
 
-public class NFeEmitirRequest
+public class NFeEmitirRequest : IEmitenteConfigSource
 {
-    [Required]
-    public ConfiguracaoEmitenteRequest ConfiguracaoEmitente { get; set; } = null!;
+    /// <summary>CNPJ do emitente cadastrado em POST /api/emitentes (evita reenviar certificado/senha).</summary>
+    public string? EmitenteCnpj { get; set; }
+
+    public ConfiguracaoEmitenteRequest? ConfiguracaoEmitente { get; set; }
 
     public int NumeroNota { get; set; }
     public string Serie { get; set; } = "1";

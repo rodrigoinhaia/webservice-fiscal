@@ -1,0 +1,21 @@
+{
+  "cnpj": "00000000000000",
+  "razaoSocial": "EMPRESA EXEMPLO LTDA",
+  "nomeFantasia": "EMPRESA EXEMPLO",
+  "ie": "0000000000",
+  "crt": 1,
+  "uf": "RS",
+  "ambiente": "Homologacao",
+  "certificadoPath": "empresa.pfx",
+  "certificadoSenha": "senha-do-pfx",
+  "validarCnpjCertificado": true,
+  "endereco": {
+    "logradouro": "Rua Exemplo",
+    "numero": "100",
+    "bairro": "Centro",
+    "codigoMunicipio": "4314902",
+    "municipio": "Porto Alegre",
+    "uf": "RS",
+    "cep": "90000000"
+  }
+}

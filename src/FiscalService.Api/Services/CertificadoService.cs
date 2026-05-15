@@ -126,10 +126,12 @@ public class CertificadoService
         }
     };
 
+    public string ResolvePath(string path) => _config.ResolveCertificadoPath(path);
+
     /// <summary>Carrega um X509Certificate2 a partir do path configurado, resolvendo path relativo se necessário.</summary>
     public X509Certificate2 CarregarCertificado(string path, string senha)
     {
-        var pathAbsoluto = _config.ResolveCertificadoPath(path);
+        var pathAbsoluto = ResolvePath(path);
 
         if (!File.Exists(pathAbsoluto))
             throw new FileNotFoundException($"Certificado não encontrado: {pathAbsoluto}");

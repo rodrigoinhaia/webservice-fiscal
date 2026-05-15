@@ -1,5 +1,6 @@
 using FiscalService.Api.Models.Requests;
 using NFe.Classes.Informacoes.Detalhe.Tributacao;
+using NFe.Classes.Informacoes.Detalhe.Tributacao.Estadual;
 using NFe.Classes.Informacoes.Detalhe.Tributacao.Federal;
 using NFe.Classes.Informacoes.Detalhe.Tributacao.Federal.Tipos;
 
@@ -38,7 +39,28 @@ public static class ImpostoItemFactory
     if (ipi is not null)
       imp.IPI = ipi;
 
+    var difal = CriarDifalOpcional(item);
+    if (difal is not null)
+      imp.ICMSUFDest = difal;
+
     return imp;
+  }
+
+  private static ICMSUFDest? CriarDifalOpcional(ItemNFeRequest item)
+  {
+    if (item.BaseCalculoUfDest is not { } vBc) return null;
+
+    return new ICMSUFDest
+    {
+      vBCUFDest = vBc,
+      pFCPUFDest = item.PercentualFcpUfDest,
+      pICMSUFDest = item.PercentualIcmsUfDest ?? 0,
+      pICMSInter = item.PercentualIcmsInter ?? 0,
+      pICMSInterPart = item.PercentualIcmsInterPartilha ?? 0,
+      vFCPUFDest = item.ValorFcpUfDest,
+      vICMSUFDest = item.ValorIcmsUfDest ?? 0,
+      vICMSUFRemet = item.ValorIcmsUfRemet ?? 0
+    };
   }
 
   private static IPI? CriarIpiOpcional(ItemNFeRequest item)

@@ -144,6 +144,24 @@ Detalhes e exemplos: `.env.example`. Checklist de homologação: [docs/SMOKE-HOM
 
 ---
 
+## Cadastro de emitentes (certificado persistido)
+
+Cadastre o emitente **uma vez**; nas emissões use só `emitenteCnpj` (sem reenviar senha do `.pfx`).
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/api/emitentes` | Cadastra emitente + valida certificado (opcional CNPJ × cert) |
+| GET | `/api/emitentes/{cnpj}` | Consulta cadastro (sem senha) |
+| GET | `/api/emitentes` | Lista paginada |
+| PUT | `/api/emitentes/{cnpj}` | Atualiza dados ou certificado |
+| DELETE | `/api/emitentes/{cnpj}` | Desativa emitente |
+
+Exemplos: [`docs/exemplos/emitente/`](docs/exemplos/emitente/) e [`docs/exemplos/nfe/emitir-via-emitente-cnpj.json`](docs/exemplos/nfe/emitir-via-emitente-cnpj.json).
+
+A senha do certificado é armazenada **criptografada** (`IDataProtection`). Em produção, proteja as chaves do Data Protection (volume persistente ou Key Vault).
+
+---
+
 ## Autenticação
 
 Todos os endpoints (exceto `/health`) exigem o header:

@@ -40,6 +40,26 @@ public class ImpostoItemFactoryTests
     }
 
     [Fact]
+    public void Monta_icms_uf_dest_quando_difal_informado()
+    {
+        var item = new ItemNFeRequest
+        {
+            OrigemMercadoria = "0",
+            CstIcms = "00",
+            BaseCalculoUfDest = 100,
+            PercentualIcmsUfDest = 18,
+            PercentualIcmsInter = 12,
+            PercentualIcmsInterPartilha = 40,
+            ValorIcmsUfDest = 5,
+            ValorIcmsUfRemet = 7
+        };
+
+        var imp = ImpostoItemFactory.Criar(item, crt: 3);
+        Assert.NotNull(imp.ICMSUFDest);
+        Assert.Equal(100, imp.ICMSUFDest!.vBCUFDest);
+    }
+
+    [Fact]
     public void Sem_cst_ipi_nao_inclui_grupo()
     {
         var item = new ItemNFeRequest { OrigemMercadoria = "0", CstIcms = "00" };

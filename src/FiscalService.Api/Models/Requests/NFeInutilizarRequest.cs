@@ -2,10 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FiscalService.Api.Models.Requests;
 
-public class NFeInutilizarRequest
+public class NFeInutilizarRequest : IEmitenteConfigSource
 {
-    [Required]
-    public ConfiguracaoEmitenteRequest ConfiguracaoEmitente { get; set; } = null!;
+    public string? EmitenteCnpj { get; set; }
+    public ConfiguracaoEmitenteRequest? ConfiguracaoEmitente { get; set; }
 
     [Required]
     public string Serie { get; set; } = string.Empty;

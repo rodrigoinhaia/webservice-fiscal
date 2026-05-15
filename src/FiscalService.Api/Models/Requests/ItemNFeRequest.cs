@@ -80,4 +80,14 @@ public class ItemNFeRequest
     public decimal? ValorOutrasDespesas { get; set; }
 
     public string? InformacaoAdicional { get; set; }
+
+    /// <summary>DIFAL — partilha ICMS para UF destino (informe quando o ERP calcular).</summary>
+    public decimal? BaseCalculoUfDest { get; set; }
+    public decimal? PercentualFcpUfDest { get; set; }
+    public decimal? PercentualIcmsUfDest { get; set; }
+    public decimal? PercentualIcmsInter { get; set; }
+    public decimal? PercentualIcmsInterPartilha { get; set; }
+    public decimal? ValorFcpUfDest { get; set; }
+    public decimal? ValorIcmsUfDest { get; set; }
+    public decimal? ValorIcmsUfRemet { get; set; }
 }

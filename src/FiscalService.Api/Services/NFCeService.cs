@@ -40,6 +40,7 @@ public class NFCeService
     private readonly AppDbContext _db;
     private readonly DanfeService _danfeService;
     private readonly NumeracaoService _numeracaoService;
+    private readonly EmitenteService _emitenteService;
     private readonly ILogger<NFCeService> _logger;
 
     public NFCeService(
@@ -47,12 +48,14 @@ public class NFCeService
         AppDbContext db,
         DanfeService danfeService,
         NumeracaoService numeracaoService,
+        EmitenteService emitenteService,
         ILogger<NFCeService> logger)
     {
         _globalConfig = globalConfig;
         _db = db;
         _danfeService = danfeService;
         _numeracaoService = numeracaoService;
+        _emitenteService = emitenteService;
         _logger = logger;
     }
 
@@ -60,6 +63,9 @@ public class NFCeService
     {
         try
         {
+            request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+            ImpostoTributacaoCatalog.ValidarItensOuLancar(request.ConfiguracaoEmitente.Crt, request.Itens);
+
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
             var nfce = ConstruirNFCe(request, config);
             nfce.Assina(config);
@@ -109,8 +115,11 @@ public class NFCeService
         }
     }
 
-    public Task<FiscalResponse> CancelarAsync(NFeCancelarRequest request, CancellationToken ct = default) =>
-        Task.FromResult(CancelarCore(request));
+    public async Task<FiscalResponse> CancelarAsync(NFeCancelarRequest request, CancellationToken ct = default)
+    {
+        request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+        return CancelarCore(request);
+    }
 
     /// <summary>Consulta status do serviço SEFAZ NFC-e (modelo 65) usando <see cref="ServicosNFe"/>.</summary>
     public StatusServicoResponse ConsultarStatusSefaz(ConfiguracaoEmitenteRequest emitente)
@@ -410,6 +419,10 @@ public class NFCeService
     {
         if (ex is TributacaoNaoSuportadaException)
             return "TributacaoInvalida";
+        if (ex is KeyNotFoundException)
+            return "EmitenteNaoEncontrado";
+        if (ex is ArgumentException)
+            return "Validacao";
 
         var msg = ex.Message.ToLowerInvariant();
         if (msg.Contains("certificado") || msg.Contains("pfx") || msg.Contains("senha")) return "CertificadoInvalido";

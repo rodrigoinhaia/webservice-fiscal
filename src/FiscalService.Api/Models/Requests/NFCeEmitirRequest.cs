@@ -2,10 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FiscalService.Api.Models.Requests;
 
-public class NFCeEmitirRequest
+public class NFCeEmitirRequest : IEmitenteConfigSource
 {
-    [Required]
-    public ConfiguracaoEmitenteRequest ConfiguracaoEmitente { get; set; } = null!;
+    public string? EmitenteCnpj { get; set; }
+    public ConfiguracaoEmitenteRequest? ConfiguracaoEmitente { get; set; }
 
     public int NumeroNota { get; set; }
     public string Serie { get; set; } = "1";

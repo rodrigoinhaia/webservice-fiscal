@@ -10,7 +10,9 @@ public sealed class NFeEmitirRequestValidator : AbstractValidator<NFeEmitirReque
         IValidator<ConfiguracaoEmitenteRequest> emitenteValidator,
         IValidator<ItemNFeRequest> itemValidator)
     {
-        RuleFor(x => x.ConfiguracaoEmitente).SetValidator(emitenteValidator);
+        RuleFor(x => x).Custom((req, ctx) => EmitenteConfigSourceValidator.ValidarEmitenteOuConfig(ctx, req));
+        RuleFor(x => x.ConfiguracaoEmitente!).SetValidator(emitenteValidator)
+            .When(x => x.ConfiguracaoEmitente is not null);
 
         RuleFor(x => x.NumeroNota).GreaterThan(0);
 
@@ -30,8 +32,9 @@ public sealed class NFeEmitirRequestValidator : AbstractValidator<NFeEmitirReque
 
         RuleForEach(x => x.Itens).Custom((item, ctx) =>
         {
-            var crt = ctx.InstanceToValidate.ConfiguracaoEmitente.Crt;
-            if (!ImpostoTributacaoCatalog.ValidarItem(item, crt, out var msg))
+            var cfg = ctx.InstanceToValidate.ConfiguracaoEmitente;
+            if (cfg is null) return;
+            if (!ImpostoTributacaoCatalog.ValidarItem(item, cfg.Crt, out var msg))
                 ctx.AddFailure(nameof(ItemNFeRequest), msg);
         });
     }

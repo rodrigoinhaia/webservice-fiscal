@@ -95,6 +95,15 @@ public static class ImpostoTributacaoCatalog
     return false;
   }
 
+  public static void ValidarItensOuLancar(int crt, List<ItemNFeRequest> itens)
+  {
+    for (var i = 0; i < itens.Count; i++)
+    {
+      if (!ValidarItem(itens[i], crt, out var msg))
+        throw new TributacaoNaoSuportadaException($"Item {i + 1}: {msg}");
+    }
+  }
+
   private static bool ValidarIpiOpcional(ItemNFeRequest item, out string? mensagem)
   {
     mensagem = null;

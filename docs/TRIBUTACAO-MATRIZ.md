@@ -59,9 +59,15 @@ Implementação: `src/FiscalService.Api/Services/Fiscal/ImpostoIcmsMapper.cs`, `
 | Alíquota | `PISAliq` / `COFINSAliq` | Suportado (default CST 07) |
 | NT / Qtde / Outros | — | Roadmap fase 3 |
 
+## DIFAL (partilha ICMS — CRT 3)
+
+Quando o ERP informar `baseCalculoUfDest` no item, o API monta `ICMSUFDest` e totaliza `vICMSUFDest` / `vICMSUFRemet` em `ICMSTot`.
+
+Exemplo: [`exemplos/nfe/crt3-interestadual-difal.json`](exemplos/nfe/crt3-interestadual-difal.json).
+
 ## Pendente (roadmap)
 
-- DIFAL (`ICMSUFDest`), FCP explícito nos totais
+- FCP explícito nos totais (além do DIFAL básico)
 - ISSQN, II importação
 - PIS/COFINS NT, monofásico
 
