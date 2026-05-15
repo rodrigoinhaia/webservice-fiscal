@@ -11,6 +11,7 @@ JSON prontos para `POST /api/nfe/emitir` e correlatos. Ajuste CNPJ, certificado 
 | [nfe/crt3-item-com-ipi.json](nfe/crt3-item-com-ipi.json) | 3 | Item com IPI tributado |
 | [nfe/crt3-interestadual-difal.json](nfe/crt3-interestadual-difal.json) | 3 | Interestadual com DIFAL (`ICMSUFDest`) |
 | [nfe/emitir-via-emitente-cnpj.json](nfe/emitir-via-emitente-cnpj.json) | — | Emissão só com `emitenteCnpj` (cadastro prévio) |
+| [nfe/contingencia-svc-an.json](nfe/contingencia-svc-an.json) | — | Contingência SVC-AN |
 
 ### Emitente (cadastro)
 

@@ -189,6 +189,10 @@ Sem o header ou com chave inválida, retorna `401 Unauthorized`.
 
 Matriz completa: [`docs/TRIBUTACAO-MATRIZ.md`](docs/TRIBUTACAO-MATRIZ.md) · Exemplos JSON: [`docs/exemplos/`](docs/exemplos/) · Roadmap: [`docs/ROADMAP-TRIBUTACAO-REGIMES.md`](docs/ROADMAP-TRIBUTACAO-REGIMES.md).
 
+**Contingência:** em `POST /api/nfe/emitir` use `tipoEmissao`: `SVC-AN`, `SVC-RS` ou `Offline` (NFC-e), com `dataHoraContingencia` e `justificativaContingencia` (mín. 15 caracteres). Exemplo: [`docs/exemplos/nfe/contingencia-svc-an.json`](docs/exemplos/nfe/contingencia-svc-an.json).
+
+**Swagger (Development):** exemplos JSON embutidos nas rotas principais via `OpenApiJsonExamplesFilter`.
+
 ---
 
 ## Observabilidade (OpenTelemetry)

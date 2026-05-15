@@ -36,10 +36,16 @@ Sem header `X-Api-Key`: **401**. Com chave correta: **200** e payload JSON.
 - **NF-e:** emitir nota de teste homologação; cancelar ou inutilizar faixa de teste conforme política da SEFAZ.
 - **CT-e / MDF-e:** uma emissão de teste + evento de cancelamento/encerramento se aplicável.
 
-## 5. Regressão rápida
+## 5. Emitente cadastrado
+
+- `POST /api/emitentes` com body de `docs/exemplos/emitente/cadastro-homologacao.json` (ajuste CNPJ/certificado).
+- `POST /api/nfe/emitir` com `docs/exemplos/nfe/emitir-via-emitente-cnpj.json` (sem senha do PFX no body).
+
+## 6. Regressão rápida
 
 - Numeração: `GET /api/numeracao/{cnpj}/{modelo}/{serie}` retorna próximo número.
-- Certificado: `POST /api/certificado/validar` (JSON com Base64 + senha) ou `POST /api/certificado/upload-arquivo` (multipart: `arquivo`, `senha`).
+- Certificado: `POST /api/certificado/validar` ou `POST /api/certificado/upload-arquivo`.
+- `/health` inclui `certificados` e `checks.certificados_emitentes` (degradado se vencer em &lt; 30 dias — `Fiscal:DiasAlertaCertificado`).
 
 ## Critério de “passou”
 

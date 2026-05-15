@@ -56,6 +56,9 @@
     <Content Include="Schemas\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\..\docs\exemplos\**\*.json" LinkBase="docs\exemplos">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

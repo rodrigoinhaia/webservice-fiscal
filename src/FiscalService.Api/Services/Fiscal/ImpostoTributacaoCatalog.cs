@@ -27,6 +27,21 @@ public static class ImpostoTributacaoCatalog
     "01", "02", "03", "04", "05", "51", "52", "53", "54", "55"
   };
 
+  public static readonly IReadOnlySet<string> CstPisCofinsAliquota = new HashSet<string>(StringComparer.Ordinal)
+  {
+    "01", "02"
+  };
+
+  public static readonly IReadOnlySet<string> CstPisCofinsNaoTributado = new HashSet<string>(StringComparer.Ordinal)
+  {
+    "04", "05", "06", "07", "08", "09"
+  };
+
+  public static readonly IReadOnlySet<string> CstPisCofinsOutros = new HashSet<string>(StringComparer.Ordinal)
+  {
+    "49", "99"
+  };
+
   public static string? NormalizarCst(string? s)
   {
     if (string.IsNullOrWhiteSpace(s)) return null;
@@ -88,12 +103,39 @@ public static class ImpostoTributacaoCatalog
         return false;
       }
 
-      return ValidarIpiOpcional(item, out mensagem);
+      if (!ValidarIpiOpcional(item, out mensagem)) return false;
+      if (!ValidarPisCofinsOpcional(item, out mensagem)) return false;
+      return true;
     }
 
     mensagem = "CRT deve ser 1, 2 ou 3.";
     return false;
   }
+
+  private static bool ValidarPisCofinsOpcional(ItemNFeRequest item, out string? mensagem)
+  {
+    mensagem = null;
+    var cstPis = NormalizarCst(item.CstPis);
+    if (cstPis is not null && !CstPisCofinsSuportado(cstPis))
+    {
+      mensagem = $"CST PIS '{cstPis}' não suportado.";
+      return false;
+    }
+
+    var cstCofins = NormalizarCst(item.CstCofins);
+    if (cstCofins is not null && !CstPisCofinsSuportado(cstCofins))
+    {
+      mensagem = $"CST COFINS '{cstCofins}' não suportado.";
+      return false;
+    }
+
+    return true;
+  }
+
+  private static bool CstPisCofinsSuportado(string cst) =>
+    CstPisCofinsAliquota.Contains(cst)
+    || CstPisCofinsNaoTributado.Contains(cst)
+    || CstPisCofinsOutros.Contains(cst);
 
   public static void ValidarItensOuLancar(int crt, List<ItemNFeRequest> itens)
   {

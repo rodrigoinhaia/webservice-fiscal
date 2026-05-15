@@ -60,6 +60,22 @@ public class ImpostoItemFactoryTests
     }
 
     [Fact]
+    public void Monta_pis_nt_cst_07()
+    {
+        var item = new ItemNFeRequest
+        {
+            OrigemMercadoria = "0",
+            CstPis = "07",
+            CstCofins = "07",
+            CstIcms = "00"
+        };
+
+        var imp = ImpostoItemFactory.Criar(item, crt: 3);
+        Assert.IsType<PISNT>(imp.PIS!.TipoPIS);
+        Assert.IsType<COFINSNT>(imp.COFINS!.TipoCOFINS);
+    }
+
+    [Fact]
     public void Sem_cst_ipi_nao_inclui_grupo()
     {
         var item = new ItemNFeRequest { OrigemMercadoria = "0", CstIcms = "00" };

@@ -37,5 +37,21 @@ public sealed class NFeEmitirRequestValidator : AbstractValidator<NFeEmitirReque
             if (!ImpostoTributacaoCatalog.ValidarItem(item, cfg.Crt, out var msg))
                 ctx.AddFailure(nameof(ItemNFeRequest), msg);
         });
+
+        RuleFor(x => x).Custom((req, ctx) =>
+        {
+            try
+            {
+                var tp = ContingenciaEmissaoMapper.Resolver(req.TipoEmissao);
+                if (!ContingenciaEmissaoMapper.ExigeContingencia(tp)) return;
+                if (string.IsNullOrWhiteSpace(req.JustificativaContingencia) || req.JustificativaContingencia.Trim().Length < 15)
+                    ctx.AddFailure(nameof(NFeEmitirRequest.JustificativaContingencia),
+                        "Justificativa de contingência deve ter no mínimo 15 caracteres.");
+            }
+            catch (ArgumentException ex)
+            {
+                ctx.AddFailure(nameof(NFeEmitirRequest.TipoEmissao), ex.Message);
+            }
+        });
     }
 }

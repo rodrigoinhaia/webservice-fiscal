@@ -54,10 +54,12 @@ Implementação: `src/FiscalService.Api/Services/Fiscal/ImpostoIcmsMapper.cs`, `
 
 ## PIS / COFINS
 
-| Tipo | Classe | Status |
-|------|--------|--------|
-| Alíquota | `PISAliq` / `COFINSAliq` | Suportado (default CST 07) |
-| NT / Qtde / Outros | — | Roadmap fase 3 |
+| CST | Classe | Status |
+|-----|--------|--------|
+| 01, 02 | `PISAliq` / `COFINSAliq` | Suportado |
+| 04–09 | `PISNT` / `COFINSNT` | Suportado (default **07**) |
+| 49, 99 | `PISOutr` / `COFINSOutr` | Suportado |
+| 03 (quantidade) | `PISQtde` | Roadmap |
 
 ## DIFAL (partilha ICMS — CRT 3)
 

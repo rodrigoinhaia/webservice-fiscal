@@ -3,6 +3,7 @@ using FiscalService.Api.Configuration;
 using FiscalService.Api.Data;
 using FiscalService.Api.Middlewares;
 using FiscalService.Api.Services;
+using FiscalService.Api.HealthChecks;
 using FiscalService.Api.Swagger;
 using FiscalService.Api.Telemetry;
 using FiscalService.Api.Validation;
@@ -116,7 +117,8 @@ try
 
     // ── Health Checks ────────────────────────────────────────────────────────
     builder.Services.AddHealthChecks()
-        .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "db", "sql" });
+        .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "db", "sql" })
+        .AddCheck<CertificadosEmitentesHealthCheck>("certificados_emitentes", tags: new[] { "certificado", "emitente" });
 
     // ── Serviços fiscais (Transient — DFe.NET não é thread-safe) ────────────
     builder.Services.AddTransient<NFeService>();
@@ -180,6 +182,7 @@ try
                 "Em Docker/.env: defina API_KEY; opcionalmente API_KEY_PREVIOUS durante rotação (ambas válidas)."
         });
         c.OperationFilter<OpenApiCommonResponsesOperationFilter>();
+        c.OperationFilter<OpenApiJsonExamplesFilter>();
         c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
         {
             {
@@ -254,6 +257,10 @@ try
         ResponseWriter = async (context, report) =>
         {
             context.Response.ContentType = "application/json";
+            var certEntry = report.Entries.TryGetValue("certificados_emitentes", out var cert)
+                ? cert.Status.ToString().ToLowerInvariant()
+                : "nao_configurado";
+
             var result = System.Text.Json.JsonSerializer.Serialize(new
             {
                 status = report.Status.ToString().ToLowerInvariant(),
@@ -262,7 +269,11 @@ try
                 banco = report.Entries.TryGetValue("postgresql", out var pg)
                     ? pg.Status.ToString().ToLowerInvariant()
                     : "desconhecido",
-                schemas = Directory.Exists(fiscalConfig.DiretorioSchemas) ? "ok" : "diretorio_nao_encontrado"
+                certificados = certEntry,
+                schemas = Directory.Exists(fiscalConfig.DiretorioSchemas) ? "ok" : "diretorio_nao_encontrado",
+                checks = report.Entries.ToDictionary(
+                    e => e.Key,
+                    e => e.Value.Status.ToString().ToLowerInvariant())
             });
             await context.Response.WriteAsync(result);
         }

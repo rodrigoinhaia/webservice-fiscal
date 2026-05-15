@@ -67,7 +67,7 @@ public class NFeService
             request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
             ImpostoTributacaoCatalog.ValidarItensOuLancar(request.ConfiguracaoEmitente.Crt, request.Itens);
 
-            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
+            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente, request.TipoEmissao);
             var nfe = ConstruirNFe(request, config);
 
             using var servicos = new ServicosNFe(config);
@@ -328,13 +328,14 @@ public class NFeService
     // Helpers internos
     // ─────────────────────────────────────────────────────────────────────────
 
-    private ConfiguracaoServico ConstruirConfiguracao(ConfiguracaoEmitenteRequest emitente)
+    private ConfiguracaoServico ConstruirConfiguracao(ConfiguracaoEmitenteRequest emitente, string? tipoEmissao = null)
     {
+        var tpEmis = ContingenciaEmissaoMapper.Resolver(tipoEmissao);
         var config = new ConfiguracaoServico
         {
             cUF = UfHelper.MapearUf(emitente.Uf),
             tpAmb = emitente.Ambiente == "Producao" ? TipoAmbiente.Producao : TipoAmbiente.Homologacao,
-            tpEmis = TipoEmissao.teNormal,
+            tpEmis = tpEmis,
             ModeloDocumento = ModeloDocumento.NFe,
             DiretorioSchemas = _globalConfig.DiretorioSchemas,
             SalvarXmlServicos = _globalConfig.SalvarXmls,
@@ -352,20 +353,16 @@ public class NFeService
 
     private static NFe.Classes.NFe ConstruirNFe(NFeEmitirRequest req, ConfiguracaoServico config)
     {
-        var emitente = req.ConfiguracaoEmitente;
+        var emitente = req.ConfiguracaoEmitente!;
         var uf = UfHelper.MapearUf(emitente.Uf);
         var dhEmissao = DateTimeOffset.Now;
+        var tpEmis = ContingenciaEmissaoMapper.Resolver(req.TipoEmissao);
 
-        var itens = req.Itens.Select((item, idx) => ConstruirItem(item, idx + 1, req.ConfiguracaoEmitente.Crt)).ToList();
+        var itens = req.Itens.Select((item, idx) => ConstruirItem(item, idx + 1, emitente.Crt)).ToList();
         var totalNota = CalcularTotais(req.Itens);
 
-        return new NFe.Classes.NFe
+        var ideNota = new ide
         {
-            infNFe = new infNFe
-            {
-                versao = "4.00",
-                ide = new ide
-                {
                     cUF = uf,
                     natOp = req.NaturezaOperacao,
                     mod = ModeloDocumento.NFe,
@@ -377,14 +374,28 @@ public class NFeService
                     idDest = (DestinoOperacao)req.IndicadorDestinatario,
                     cMunFG = long.TryParse(emitente.Endereco?.CodigoMunicipio, out var cMunFG) ? cMunFG : 0,
                     tpImp = TipoImpressao.tiRetrato,
-                    tpEmis = TipoEmissao.teNormal,
+                    tpEmis = tpEmis,
                     tpAmb = config.tpAmb,
                     finNFe = (FinalidadeNFe)req.Finalidade,
                     indFinal = ConsumidorFinal.cfNao,
                     indPres = PresencaComprador.pcPresencial,
                     procEmi = ProcessoEmissao.peAplicativoContribuinte,
                     verProc = "1.0"
-                },
+        };
+
+        if (ContingenciaEmissaoMapper.ExigeContingencia(tpEmis))
+        {
+            ideNota.dhCont = req.DataHoraContingencia ?? dhEmissao;
+            ideNota.xJust = req.JustificativaContingencia
+                ?? throw new ArgumentException("justificativaContingencia é obrigatória em contingência.");
+        }
+
+        return new NFe.Classes.NFe
+        {
+            infNFe = new infNFe
+            {
+                versao = "4.00",
+                ide = ideNota,
                 emit = new emit
                 {
                     CNPJ = emitente.Cnpj,

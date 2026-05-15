@@ -1,0 +1,34 @@
+{
+  "emitenteCnpj": "00000000000000",
+  "tipoEmissao": "SVC-AN",
+  "dataHoraContingencia": "2026-05-15T10:00:00-03:00",
+  "justificativaContingencia": "SEFAZ do emitente indisponivel para autorizacao em tempo real.",
+  "numeroNota": 1,
+  "serie": "1",
+  "destinatario": {
+    "cpf": "00000000000",
+    "razaoSocial": "CONSUMIDOR FINAL",
+    "indicadorIe": 9
+  },
+  "itens": [
+    {
+      "numeroItem": 1,
+      "codigoProduto": "001",
+      "descricaoProduto": "PRODUTO CONTINGENCIA",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "unidadeComercial": "UN",
+      "quantidadeComercial": 1,
+      "valorUnitarioComercial": 50,
+      "valorTotalBruto": 50,
+      "csosnIcms": "102",
+      "origemMercadoria": "0"
+    }
+  ],
+  "pagamentos": [
+    {
+      "formaPagamento": "01",
+      "valorPagamento": 50
+    }
+  ]
+}

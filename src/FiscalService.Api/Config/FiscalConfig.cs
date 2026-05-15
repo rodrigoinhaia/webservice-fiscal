@@ -22,6 +22,9 @@ public sealed class FiscalConfig
     /// <summary>Timeout em segundos para chamadas ao WebService da SEFAZ.</summary>
     public int TimeoutWs { get; set; } = 30;
 
+    /// <summary>Dias antes do vencimento para o /health reportar status degradado.</summary>
+    public int DiasAlertaCertificado { get; set; } = 30;
+
     /// <summary>Resolve um path de certificado relativo para absoluto.</summary>
     public string ResolveCertificadoPath(string path)
     {

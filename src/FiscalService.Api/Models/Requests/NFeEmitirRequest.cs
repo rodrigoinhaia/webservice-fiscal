@@ -34,4 +34,12 @@ public class NFeEmitirRequest : IEmitenteConfigSource
 
     /// <summary>Modalidade de frete: 0=Por conta do emitente, 1=Por conta do destinatário, etc.</summary>
     public int ModalidadeFrete { get; set; } = 1;
+
+    /// <summary>Tipo de emissão: Normal (padrão), SVC-AN, SVC-RS. Exige dataHoraContingencia e justificativaContingencia.</summary>
+    public string? TipoEmissao { get; set; }
+
+    public DateTimeOffset? DataHoraContingencia { get; set; }
+
+    /// <summary>Justificativa da contingência (mín. 15 caracteres quando tipo ≠ Normal).</summary>
+    public string? JustificativaContingencia { get; set; }
 }

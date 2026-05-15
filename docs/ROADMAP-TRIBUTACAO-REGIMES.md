@@ -87,9 +87,9 @@ Objetivo: federais compatíveis com indústria, atacado e monofásico.
 | # | Tarefa | Entregável | Classes DFe.NET |
 |---|--------|------------|-----------------|
 | 3.1 | [x] **IPI** no item (`IPITrib`, `IPINT`) conforme `cstIpi` | `ImpostoItemFactory` + testes | `IPI`, `IPITrib`, `IPINT` |
-| 3.2 | [ ] **PISNT** / **COFINSNT** (CST 04, 05, 06, 07, 08, 09…) | Factory por CST | `PISNT`, `COFINSNT` |
+| 3.2 | [x] **PISNT** / **COFINSNT** (CST 04–09) | `ImpostoItemFactory` | `PISNT`, `COFINSNT` |
 | 3.3 | [ ] **PISQtde** / **COFINSQtde** | Campos qBCProd, vAliqProd | `PISQtde`, `COFINSQtde` |
-| 3.4 | [ ] **PISOutr** / **COFINSOutr** (CST 49, 99) | Mapper genérico | `PISOutr`, `COFINSOutr` |
+| 3.4 | [x] **PISOutr** / **COFINSOutr** (CST 49, 99) | `ImpostoItemFactory` | `PISOutr`, `COFINSOutr` |
 | 3.5 | [ ] Recalcular ou validar **ICMSTot** vs soma dos itens (vProd, vDesc, vST, vIPI, vPIS, vCOFINS) | Validator de consistência | `total.ICMSTot` |
 | 3.6 | [ ] **II** (importação) — grupo quando CFOP de importação | `II` no item + `vII` no total | `II` |
 | 3.7 | [ ] Exemplos `docs/exemplos/nfe/item-com-ipi.json`, `pis-cofins-nt.json` | JSON + nota no README | — |
@@ -131,7 +131,7 @@ Objetivo: operação em produção sem reenviar certificado/senha em toda nota.
 | 6.3 | [x] `POST/GET/PUT/DELETE /api/emitentes` | `EmitentesController` |
 | 6.4 | [x] Emissão por **`emitenteCnpj`** com payload reduzido (NF-e/NFC-e + eventos NF-e) | `IEmitenteConfigSource` |
 | 6.5 | [x] Validar **CNPJ do certificado = CNPJ do emitente** no cadastro/atualização | `validarCnpjCertificado` |
-| 6.6 | [ ] Health check: alerta certificado a expirar (&lt; 30 dias) | `/health` degradado |
+| 6.6 | [x] Health check: alerta certificado a expirar (&lt; 30 dias) | `CertificadosEmitentesHealthCheck` + `Fiscal:DiasAlertaCertificado` |
 
 ---
 
@@ -139,7 +139,7 @@ Objetivo: operação em produção sem reenviar certificado/senha em toda nota.
 
 | # | Tarefa | Entregável | DFe.NET |
 |---|--------|------------|---------|
-| 7.1 | [ ] **Contingência** SVC-AN / SVC-RS (`tpEmis`, dhCont, xJust) | Config + `NFeService` | `TipoEmissao` / fluxos AppTeste |
+| 7.1 | [x] **Contingência** SVC-AN / SVC-RS (`tpEmis`, dhCont, xJust) | `tipoEmissao` em `NFeEmitirRequest` | `ContingenciaEmissaoMapper` |
 | 7.2 | [ ] **Distribuição DF-e** + manifestação destinatário | Novo service | `NFeDistribuicaoDFe` |
 | 7.3 | [ ] **Retry** político em timeout SEFAZ (idempotência por chave) | Polly ou manual | — |
 | 7.4 | [ ] Emissão **assíncrona** + webhook (opcional) | Fila + callback | — |
@@ -152,7 +152,7 @@ Objetivo: operação em produção sem reenviar certificado/senha em toda nota.
 | # | Tarefa | Entregável |
 |---|--------|------------|
 | 8.1 | [~] Pasta **`docs/exemplos/`** com JSON por cenário (emitir, cancelar, CC-e, NFC-e) | NF-e por regime entregue; cancelar/NFC-e pendente |
-| 8.2 | [ ] **`Swashbuckle`**: `OpenApiExample` / schema filters com payloads de `docs/exemplos/` | `Swagger/Examples/*.cs` |
+| 8.2 | [~] **`Swashbuckle`**: exemplos JSON de `docs/exemplos/` | `OpenApiJsonExamplesFilter` (NF-e emitir, emitentes, NFC-e) |
 | 8.3 | [ ] Habilitar `GenerateDocumentationFile` + `IncludeXmlComments` nos DTOs | Summaries no Swagger UI |
 | 8.4 | [ ] Página **`docs/GUIA-REGIMES.md`**: CRT 1/2/3, quem calcula o quê (ERP vs API), tabela CST/CSOSN suportados | Link no README |
 | 8.5 | [ ] Atualizar **`CAPACIDADES.md`** §6 e §20 a cada fase concluída | Manutenção contínua |
