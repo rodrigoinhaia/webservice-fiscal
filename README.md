@@ -15,7 +15,7 @@ Compatível com **Docker/Linux** — sem dependência de Windows ou interface gr
 
 | Documento | Modelo | Versão | Operações |
 |-----------|--------|--------|-----------|
-| NF-e | 55 | 4.0 | Emitir, Cancelar, CC-e, Consultar, Inutilizar, Status SEFAZ |
+| NF-e | 55 | 4.0 | Emitir (contingência), Cancelar, CC-e, Consultar, Inutilizar, Distribuição DF-e, Manifestação destinatário, Status SEFAZ |
 | NFC-e | 65 | 4.0 | Emitir (CSC/IdCSC), Cancelar |
 | CT-e | 57 | 4.0 | Emitir, Cancelar |
 | MDF-e | 58 | 3.0 | Emitir, Encerrar, Cancelar |
@@ -81,9 +81,16 @@ Resposta esperada:
   "versao": "1.0.0",
   "timestamp": "2025-04-24T10:00:00Z",
   "banco": "healthy",
-  "schemas": "ok"
+  "certificados": "healthy",
+  "schemas": "ok",
+  "checks": {
+    "postgresql": "healthy",
+    "certificados_emitentes": "healthy"
+  }
 }
 ```
+
+`certificados_emitentes` fica **degraded** se algum PFX de emitente ativo vence em menos de `Fiscal:DiasAlertaCertificado` dias (padrão 30), ou **unhealthy** se expirado/ausente.
 
 ---
 
@@ -133,6 +140,10 @@ A URL de escuta segue `launchSettings.json` / `ASPNETCORE_URLS` (ex.: `https://l
 | `SERVICE_PORT` | Não | Usada pelo **Docker Compose** para publicar a API (`${SERVICE_PORT:-5555}`). |
 | `FISCAL_AMBIENTE` | Não | Mapeada para `Fiscal__Ambiente` (`Homologacao` ou `Producao`). |
 | `FISCAL_TIMEOUT_WS` | Não | Mapeada para `Fiscal__TimeoutWs` (segundos). |
+| `Fiscal__DiasAlertaCertificado` | Não | Alerta de vencimento no `/health` (dias; padrão `30`). |
+| `Fiscal__SefazRetryHabilitado` | Não | Retry em falha transitória SEFAZ (padrão `true`). |
+| `Fiscal__SefazRetryMaxTentativas` | Não | Tentativas incluindo a 1ª (padrão `3`). |
+| `Fiscal__SefazRetryIntervaloMs` | Não | Intervalo base entre retentativas em ms (padrão `1000`). |
 | `Serilog__File__Disabled` | Não | `true` força apenas console (sem tentar arquivo). |
 | `Serilog__File__Path` | Não | Sobrescreve `Serilog:File:Path` (caminho do log em disco). |
 | `OpenTelemetry__Enabled` | Não | `true` liga exportação OTLP (exige endpoint). |
@@ -184,12 +195,17 @@ Sem o header ou com chave inválida, retorna `401 Unauthorized`.
 
 - **CRT 3:** `cstIcms` — `00`, `10`, `20`, `30`, `40`, `41`, `50`, `51`, `60`, `70`, `90` (CST não suportado → **400**, sem fallback silencioso).
 - **CRT 1 ou 2:** `csosnIcms` — `101`, `102`, `103`, `201`, `202`, `203`, `500`, `900` (padrão `102`).
-- **IPI (opcional):** `cstIpi` + `valorIpi` / `aliquotaIpi` — grupos `IPITrib` ou `IPINT` no XML.
-- PIS/COFINS: `cstPis` / `cstCofins` com alíquota (`PISAliq` / `COFINSAliq`).
+- **IPI (opcional):** `cstIpi` + `valorIpi` / `aliquotaIpi` — `IPITrib` ou `IPINT`.
+- **PIS/COFINS:** `01`/`02` alíquota; `03` quantidade (`PISQtde`/`COFINSQtde`); `04`–`09` NT; `49`/`99` outros; default `07`.
+- **DIFAL (opcional):** `baseCalculoUfDest`, percentuais e valores → `ICMSUFDest`.
 
 Matriz completa: [`docs/TRIBUTACAO-MATRIZ.md`](docs/TRIBUTACAO-MATRIZ.md) · Exemplos JSON: [`docs/exemplos/`](docs/exemplos/) · Roadmap: [`docs/ROADMAP-TRIBUTACAO-REGIMES.md`](docs/ROADMAP-TRIBUTACAO-REGIMES.md).
 
-**Contingência:** em `POST /api/nfe/emitir` use `tipoEmissao`: `SVC-AN`, `SVC-RS` ou `Offline` (NFC-e), com `dataHoraContingencia` e `justificativaContingencia` (mín. 15 caracteres). Exemplo: [`docs/exemplos/nfe/contingencia-svc-an.json`](docs/exemplos/nfe/contingencia-svc-an.json).
+**Contingência:** em `POST /api/nfe/emitir` use `tipoEmissao`: `Normal`, `SVC-AN`, `SVC-RS` ou `Offline`, com `dataHoraContingencia` e `justificativaContingencia` (mín. 15 caracteres) quando não for normal. Exemplo: [`docs/exemplos/nfe/contingencia-svc-an.json`](docs/exemplos/nfe/contingencia-svc-an.json).
+
+**Retry SEFAZ:** falhas transitórias (timeout/rede) são reexecutadas conforme `Fiscal:SefazRetry*` — não reenvia automaticamente em rejeição de negócio (`cStat`).
+
+**Distribuição DF-e / manifestação:** ver rotas NF-e abaixo; exemplos em [`docs/exemplos/nfe/distribuicao-dfe.json`](docs/exemplos/nfe/distribuicao-dfe.json) e [`manifestar-ciencia.json`](docs/exemplos/nfe/manifestar-ciencia.json).
 
 **Swagger (Development):** exemplos JSON embutidos nas rotas principais via `OpenApiJsonExamplesFilter`.
 
@@ -212,6 +228,8 @@ Com `OpenTelemetry:Enabled=true` **ou** `OTEL_EXPORTER_OTLP_ENDPOINT` definida, 
 | POST | `/api/nfe/carta-correcao` | Emite CC-e (Carta de Correção Eletrônica) |
 | POST | `/api/nfe/consultar` | Consulta situação na SEFAZ |
 | POST | `/api/nfe/inutilizar` | Inutiliza faixa de numeração |
+| POST | `/api/nfe/distribuicao-dfe` | Distribuição DF-e (NSU / chave) — documentos do destinatário |
+| POST | `/api/nfe/manifestar-destinatario` | Manifestação (ciência, confirmação, desconhecimento, não realizada) |
 | GET | `/api/nfe/status-sefaz` | Consulta status do serviço SEFAZ |
 
 ### NFC-e
@@ -288,14 +306,16 @@ O campo `nome` é opcional; se omitir, usa o nome do arquivo enviado. A resposta
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| POST | `/api/consulta/status-servico` | Status do serviço SEFAZ |
+| POST | `/api/consulta/status-servico` | Status do serviço SEFAZ (NF-e, NFC-e, CT-e, MDF-e) |
+| GET | `/api/emissoes` | Histórico paginado de emissões |
+| GET | `/api/emissoes/{chave}` | Último log por chave de acesso |
 | GET | `/health` | Health check (sem autenticação) |
 
 ---
 
 ## Exemplo de Chamada — Emissão NF-e
 
-Payloads por regime (Simples, LP, LR): pasta [`docs/exemplos/nfe/`](docs/exemplos/nfe/).
+Payloads por regime (Simples, LP, LR): pasta [`docs/exemplos/nfe/`](docs/exemplos/nfe/). Com emitente cadastrado, prefira só `emitenteCnpj` — ver [`emitir-via-emitente-cnpj.json`](docs/exemplos/nfe/emitir-via-emitente-cnpj.json).
 
 ```bash
 curl -X POST http://localhost:5555/api/nfe/emitir \
@@ -386,7 +406,11 @@ curl -X POST http://localhost:5555/api/nfe/emitir \
     "DiretorioXmls": "/app/xmls",
     "DiretorioSchemas": "/app/schemas",
     "DiretorioCertificados": "/app/certificados",
-    "TimeoutWs": 30
+    "TimeoutWs": 30,
+    "DiasAlertaCertificado": 30,
+    "SefazRetryHabilitado": true,
+    "SefazRetryMaxTentativas": 3,
+    "SefazRetryIntervaloMs": 1000
   },
   "Database": {
     "ConnectionString": "Host=...;Database=fiscal_db;Username=...;Password=..."
@@ -413,6 +437,8 @@ O `docker-compose.yml` lê o `.env` da raiz e injeta no container (formato ASP.N
 | `DB_PASSWORD` | trecho `Password=` em `Database__ConnectionString` | Senha do Postgres (`Host=db;…`) |
 | `FISCAL_AMBIENTE` | `Fiscal__Ambiente` | `Homologacao` ou `Producao` |
 | `FISCAL_TIMEOUT_WS` | `Fiscal__TimeoutWs` | Timeout SEFAZ (segundos) |
+| `Fiscal__DiasAlertaCertificado` | idem | Alerta certificado no `/health` |
+| `Fiscal__SefazRetry*` | idem | Retry em falha transitória SEFAZ |
 | `SERVICE_PORT` | mapeamento de porta host | Padrão `5555` |
 
 Você também pode definir `Database__ConnectionString` completa no compose, se preferir.
