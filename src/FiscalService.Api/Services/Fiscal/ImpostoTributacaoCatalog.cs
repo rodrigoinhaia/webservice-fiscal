@@ -32,6 +32,11 @@ public static class ImpostoTributacaoCatalog
     "01", "02"
   };
 
+  public static readonly IReadOnlySet<string> CstPisCofinsQuantidade = new HashSet<string>(StringComparer.Ordinal)
+  {
+    "03"
+  };
+
   public static readonly IReadOnlySet<string> CstPisCofinsNaoTributado = new HashSet<string>(StringComparer.Ordinal)
   {
     "04", "05", "06", "07", "08", "09"
@@ -134,6 +139,7 @@ public static class ImpostoTributacaoCatalog
 
   private static bool CstPisCofinsSuportado(string cst) =>
     CstPisCofinsAliquota.Contains(cst)
+    || CstPisCofinsQuantidade.Contains(cst)
     || CstPisCofinsNaoTributado.Contains(cst)
     || CstPisCofinsOutros.Contains(cst);
 

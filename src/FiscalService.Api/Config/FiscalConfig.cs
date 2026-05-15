@@ -25,6 +25,15 @@ public sealed class FiscalConfig
     /// <summary>Dias antes do vencimento para o /health reportar status degradado.</summary>
     public int DiasAlertaCertificado { get; set; } = 30;
 
+    /// <summary>Retentativas em falhas transitórias de rede/timeout nas chamadas SEFAZ.</summary>
+    public bool SefazRetryHabilitado { get; set; } = true;
+
+    /// <summary>Número máximo de tentativas (inclui a primeira chamada).</summary>
+    public int SefazRetryMaxTentativas { get; set; } = 3;
+
+    /// <summary>Intervalo base em ms entre tentativas (multiplicado pelo número da tentativa).</summary>
+    public int SefazRetryIntervaloMs { get; set; } = 1000;
+
     /// <summary>Resolve um path de certificado relativo para absoluto.</summary>
     public string ResolveCertificadoPath(string path)
     {

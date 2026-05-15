@@ -140,8 +140,8 @@ Objetivo: operação em produção sem reenviar certificado/senha em toda nota.
 | # | Tarefa | Entregável | DFe.NET |
 |---|--------|------------|---------|
 | 7.1 | [x] **Contingência** SVC-AN / SVC-RS (`tpEmis`, dhCont, xJust) | `tipoEmissao` em `NFeEmitirRequest` | `ContingenciaEmissaoMapper` |
-| 7.2 | [ ] **Distribuição DF-e** + manifestação destinatário | Novo service | `NFeDistribuicaoDFe` |
-| 7.3 | [ ] **Retry** político em timeout SEFAZ (idempotência por chave) | Polly ou manual | — |
+| 7.2 | [x] **Distribuição DF-e** + manifestação destinatário | `NFeDfeService` + rotas `/api/nfe/distribuicao-dfe`, `/manifestar-destinatario` | `NfeDistDFeInteresse` |
+| 7.3 | [x] **Retry** político em timeout SEFAZ (falhas transitórias) | `SefazRetry` + `Fiscal:SefazRetry*` | manual |
 | 7.4 | [ ] Emissão **assíncrona** + webhook (opcional) | Fila + callback | — |
 | 7.5 | [ ] Homologação formal: checklist `SMOKE-HOMOLOGACAO.md` por regime (SN, LP, LR) | Evidências em `PROGRESS.md` | — |
 

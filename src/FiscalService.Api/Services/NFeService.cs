@@ -72,8 +72,9 @@ public class NFeService
 
             using var servicos = new ServicosNFe(config);
             var idLote = (int)(Math.Abs(DateTime.UtcNow.Ticks) % int.MaxValue);
-            var retorno = servicos.NFeAutorizacao(idLote, IndicadorSincronizacao.Sincrono,
-                new List<NFe.Classes.NFe> { nfe });
+            var retorno = SefazRetry.Execute(_globalConfig, _logger, "NFeAutorizacao", () =>
+                servicos.NFeAutorizacao(idLote, IndicadorSincronizacao.Sincrono,
+                    new List<NFe.Classes.NFe> { nfe }));
 
             var infProt = retorno.Retorno?.protNFe?.infProt;
             if (infProt is null)
@@ -127,11 +128,12 @@ public class NFeService
 
             using var servicos = new ServicosNFe(config);
             var idLote = (int)(Math.Abs(DateTime.UtcNow.Ticks) % int.MaxValue);
-            var retorno = servicos.RecepcaoEventoCancelamento(
-                idLote, 1,
-                request.Protocolo, request.ChaveAcesso,
-                request.Justificativa,
-                request.ConfiguracaoEmitente.Cnpj);
+            var retorno = SefazRetry.Execute(_globalConfig, _logger, "NFeCancelamento", () =>
+                servicos.RecepcaoEventoCancelamento(
+                    idLote, 1,
+                    request.Protocolo, request.ChaveAcesso,
+                    request.Justificativa,
+                    request.ConfiguracaoEmitente.Cnpj));
 
             var retEvento = retorno.Retorno?.retEvento?.FirstOrDefault()?.infEvento;
             if (retEvento is null)
@@ -170,11 +172,12 @@ public class NFeService
 
             using var servicos = new ServicosNFe(config);
             var idLote = (int)(Math.Abs(DateTime.UtcNow.Ticks) % int.MaxValue);
-            var retorno = servicos.RecepcaoEventoCartaCorrecao(
-                idLote, request.SequenciaEvento,
-                request.ChaveAcesso,
-                request.Correcao,
-                request.ConfiguracaoEmitente.Cnpj);
+            var retorno = SefazRetry.Execute(_globalConfig, _logger, "NFeCartaCorrecao", () =>
+                servicos.RecepcaoEventoCartaCorrecao(
+                    idLote, request.SequenciaEvento,
+                    request.ChaveAcesso,
+                    request.Correcao,
+                    request.ConfiguracaoEmitente!.Cnpj));
 
             var retEvento = retorno.Retorno?.retEvento?.FirstOrDefault()?.infEvento;
             if (retEvento is null)
@@ -211,7 +214,8 @@ public class NFeService
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente!);
 
             using var servicos = new ServicosNFe(config);
-            var retorno = servicos.NfeConsultaProtocolo(request.ChaveAcesso);
+            var retorno = SefazRetry.Execute(_globalConfig, _logger, "NFeConsultaProtocolo", () =>
+                servicos.NfeConsultaProtocolo(request.ChaveAcesso));
 
             var ret = retorno.Retorno;
             if (ret is null)
@@ -251,14 +255,15 @@ public class NFeService
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente!);
 
             using var servicos = new ServicosNFe(config);
-            var retorno = servicos.NfeInutilizacao(
-                request.ConfiguracaoEmitente.Cnpj,
-                DateTime.Now.Year % 100,
-                ModeloDocumento.NFe,
-                int.Parse(request.Serie),
-                request.NumeroInicial,
-                request.NumeroFinal,
-                request.Justificativa);
+            var retorno = SefazRetry.Execute(_globalConfig, _logger, "NFeInutilizacao", () =>
+                servicos.NfeInutilizacao(
+                    request.ConfiguracaoEmitente!.Cnpj,
+                    DateTime.Now.Year % 100,
+                    ModeloDocumento.NFe,
+                    int.Parse(request.Serie),
+                    request.NumeroInicial,
+                    request.NumeroFinal,
+                    request.Justificativa));
 
             var ret = retorno.Retorno?.infInut;
             if (ret is null)
@@ -290,7 +295,8 @@ public class NFeService
             var config = ConstruirConfiguracao(emitente);
 
             using var servicos = new ServicosNFe(config);
-            var retorno = servicos.NfeStatusServico();
+            var retorno = SefazRetry.Execute(_globalConfig, _logger, "NFeStatusServico", () =>
+                servicos.NfeStatusServico());
 
             var ret = retorno.Retorno;
             if (ret is null)

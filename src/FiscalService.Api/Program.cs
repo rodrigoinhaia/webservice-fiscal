@@ -122,6 +122,7 @@ try
 
     // ── Serviços fiscais (Transient — DFe.NET não é thread-safe) ────────────
     builder.Services.AddTransient<NFeService>();
+    builder.Services.AddTransient<NFeDfeService>();
     builder.Services.AddTransient<NFCeService>();
     builder.Services.AddTransient<CTeService>();
     builder.Services.AddTransient<MDFeService>();

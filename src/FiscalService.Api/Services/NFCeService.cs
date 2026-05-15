@@ -73,8 +73,9 @@ public class NFCeService
 
             using var servicos = new ServicosNFe(config);
             var idLote = (int)(Math.Abs(DateTime.UtcNow.Ticks) % int.MaxValue);
-            var retorno = servicos.NFeAutorizacao(idLote, IndicadorSincronizacao.Sincrono,
-                new List<NFe.Classes.NFe> { nfce });
+            var retorno = SefazRetry.Execute(_globalConfig, _logger, "NFCeAutorizacao", () =>
+                servicos.NFeAutorizacao(idLote, IndicadorSincronizacao.Sincrono,
+                    new List<NFe.Classes.NFe> { nfce }));
 
             var infProt = retorno.Retorno?.protNFe?.infProt;
             if (infProt is null)
@@ -128,7 +129,8 @@ public class NFCeService
         {
             var config = ConstruirConfiguracao(emitente);
             using var servicos = new ServicosNFe(config);
-            var retorno = servicos.NfeStatusServico();
+            var retorno = SefazRetry.Execute(_globalConfig, _logger, "NFCeStatusServico", () =>
+                servicos.NfeStatusServico());
 
             var ret = retorno.Retorno;
             if (ret is null)
@@ -165,11 +167,12 @@ public class NFCeService
 
             using var servicos = new ServicosNFe(config);
             var idLote = (int)(Math.Abs(DateTime.UtcNow.Ticks) % int.MaxValue);
-            var retorno = servicos.RecepcaoEventoCancelamento(
-                idLote, 1,
-                request.Protocolo, request.ChaveAcesso,
-                request.Justificativa,
-                request.ConfiguracaoEmitente.Cnpj);
+            var retorno = SefazRetry.Execute(_globalConfig, _logger, "NFCeCancelamento", () =>
+                servicos.RecepcaoEventoCancelamento(
+                    idLote, 1,
+                    request.Protocolo, request.ChaveAcesso,
+                    request.Justificativa,
+                    request.ConfiguracaoEmitente!.Cnpj));
 
             var retEvento = retorno.Retorno?.retEvento?.FirstOrDefault()?.infEvento;
             if (retEvento is null)

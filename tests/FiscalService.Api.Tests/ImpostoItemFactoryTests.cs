@@ -76,6 +76,29 @@ public class ImpostoItemFactoryTests
     }
 
     [Fact]
+    public void Monta_pis_cofins_cst_03_por_quantidade()
+    {
+        var item = new ItemNFeRequest
+        {
+            OrigemMercadoria = "0",
+            CstIcms = "00",
+            CstPis = "03",
+            CstCofins = "03",
+            QuantidadeComercial = 10,
+            ValorUnitarioComercial = 2.5m,
+            ValorPis = 5m,
+            ValorCofins = 7m
+        };
+
+        var imp = ImpostoItemFactory.Criar(item, crt: 3);
+        Assert.IsType<PISQtde>(imp.PIS!.TipoPIS);
+        Assert.IsType<COFINSQtde>(imp.COFINS!.TipoCOFINS);
+        var pis = (PISQtde)imp.PIS.TipoPIS;
+        Assert.Equal(10, pis.qBCProd);
+        Assert.Equal(5m, pis.vPIS);
+    }
+
+    [Fact]
     public void Sem_cst_ipi_nao_inclui_grupo()
     {
         var item = new ItemNFeRequest { OrigemMercadoria = "0", CstIcms = "00" };

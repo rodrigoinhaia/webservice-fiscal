@@ -46,6 +46,20 @@ public static class ImpostoItemFactory
       };
     }
 
+    if (ImpostoTributacaoCatalog.CstPisCofinsQuantidade.Contains(cst))
+    {
+      return new PIS
+      {
+        TipoPIS = new PISQtde
+        {
+          CST = (CSTPIS)int.Parse(cst),
+          qBCProd = item.QuantidadeTributavel ?? item.QuantidadeComercial,
+          vAliqProd = item.ValorUnitarioTributavel ?? item.ValorUnitarioComercial,
+          vPIS = item.ValorPis ?? 0
+        }
+      };
+    }
+
     if (ImpostoTributacaoCatalog.CstPisCofinsNaoTributado.Contains(cst))
     {
       return new PIS
@@ -86,6 +100,20 @@ public static class ImpostoItemFactory
           CST = (CSTCOFINS)int.Parse(cst),
           vBC = item.BaseCalculoCofins ?? 0,
           pCOFINS = item.AliquotaCofins ?? 0,
+          vCOFINS = item.ValorCofins ?? 0
+        }
+      };
+    }
+
+    if (ImpostoTributacaoCatalog.CstPisCofinsQuantidade.Contains(cst))
+    {
+      return new COFINS
+      {
+        TipoCOFINS = new COFINSQtde
+        {
+          CST = (CSTCOFINS)int.Parse(cst),
+          qBCProd = item.QuantidadeTributavel ?? item.QuantidadeComercial,
+          vAliqProd = item.ValorUnitarioTributavel ?? item.ValorUnitarioComercial,
           vCOFINS = item.ValorCofins ?? 0
         }
       };
