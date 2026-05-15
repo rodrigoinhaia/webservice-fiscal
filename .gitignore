@@ -34,6 +34,9 @@ _build_verify/
 _test_out/
 _test_out2/
 
+# Evidências do smoke (scripts/smoke-homologacao.ps1)
+scripts/smoke-output/*.jsonl
+
 # OS
 .DS_Store
 Thumbs.db

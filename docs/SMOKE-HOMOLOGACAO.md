@@ -4,6 +4,37 @@ Checklist manual após deploy ou alteração relevante no `FiscalService.Api`. E
 
 Registre evidências (data, operador, `cStat`, trecho de resposta) em `PROGRESS.md` ou anexo interno do time.
 
+## Script automatizado (PowerShell)
+
+Na raiz do repositório, com a API no ar e `.env` preenchido (`API_KEY`, `DB_*`, `FISCAL_AMBIENTE=Homologacao`):
+
+```powershell
+# Mínimo: health + auth + cadastro emitente + 1 NF-e
+.\scripts\smoke-homologacao.ps1 `
+  -Cnpj "12345678000199" `
+  -CertificadoSenha "senha-do-pfx" `
+  -CadastrarEmitente `
+  -EmitirNFe `
+  -TestarTributacaoInvalida
+
+# Completo: todos os regimes de exemplo + distribuição DF-e
+.\scripts\smoke-homologacao.ps1 `
+  -Cnpj "12345678000199" `
+  -CertificadoSenha "senha-do-pfx" `
+  -CadastrarEmitente `
+  -EmitirNFe `
+  -EmitirTodosRegimes `
+  -TestarDistribuicaoDfe `
+  -TestarTributacaoInvalida
+
+# NFC-e (informe CSC de homologação da UF)
+.\scripts\smoke-homologacao.ps1 -Cnpj "..." -CertificadoSenha "..." -CadastrarEmitente -EmitirNFCe -IdCsc "1" -Csc "SEU_CSC"
+```
+
+Evidências em `scripts/smoke-output/evidencias-*.jsonl` (não versionado). Saída com código `1` se algum passo falhar.
+
+Parâmetros: `Get-Help .\scripts\smoke-homologacao.ps1 -Full`.
+
 ## Pré-condições
 
 | Item | Verificação |
