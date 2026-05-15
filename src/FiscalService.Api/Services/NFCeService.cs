@@ -408,6 +408,9 @@ public class NFCeService
 
     private static string ClassificarExcecao(Exception ex)
     {
+        if (ex is TributacaoNaoSuportadaException)
+            return "TributacaoInvalida";
+
         var msg = ex.Message.ToLowerInvariant();
         if (msg.Contains("certificado") || msg.Contains("pfx") || msg.Contains("senha")) return "CertificadoInvalido";
         if (msg.Contains("timeout") || msg.Contains("unavailable") || msg.Contains("connection")) return "ServicoIndisponivel";

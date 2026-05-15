@@ -10,10 +10,16 @@ public class ImpostoIcmsMapperTests
     [Theory]
     [InlineData("00", typeof(ICMS00))]
     [InlineData("0", typeof(ICMS00))]
+    [InlineData("10", typeof(ICMS10))]
+    [InlineData("20", typeof(ICMS20))]
+    [InlineData("30", typeof(ICMS30))]
     [InlineData("40", typeof(ICMS40))]
     [InlineData("41", typeof(ICMS40))]
     [InlineData("50", typeof(ICMS40))]
+    [InlineData("51", typeof(ICMS51))]
     [InlineData("60", typeof(ICMS60))]
+    [InlineData("70", typeof(ICMS70))]
+    [InlineData("90", typeof(ICMS90))]
     public void Regime_normal_mapeia_cst_para_grupo_correto(string cst, Type tipoEsperado)
     {
         var item = new ItemNFeRequest
@@ -22,6 +28,9 @@ public class ImpostoIcmsMapperTests
             BaseCalculoIcms = 100,
             AliquotaIcms = 18,
             ValorIcms = 18,
+            BaseCalculoIcmsSt = 50,
+            AliquotaIcmsSt = 18,
+            ValorIcmsSt = 9,
             OrigemMercadoria = "0"
         };
 
@@ -43,9 +52,6 @@ public class ImpostoIcmsMapperTests
         var item = new ItemNFeRequest
         {
             CsosnIcms = csosn,
-            BaseCalculoIcms = 100,
-            AliquotaIcms = 18,
-            ValorIcms = 18,
             OrigemMercadoria = "0"
         };
 
@@ -67,5 +73,19 @@ public class ImpostoIcmsMapperTests
         var item = new ItemNFeRequest { OrigemMercadoria = "0" };
         var icms = ImpostoIcmsMapper.CriarIcms(item, crt: 3);
         Assert.IsType<ICMS00>(icms.TipoICMS);
+    }
+
+    [Fact]
+    public void Cst_nao_suportado_lanca_excecao()
+    {
+        var item = new ItemNFeRequest { CstIcms = "99", OrigemMercadoria = "0" };
+        Assert.Throws<TributacaoNaoSuportadaException>(() => ImpostoIcmsMapper.CriarIcms(item, crt: 3));
+    }
+
+    [Fact]
+    public void Csosn_nao_suportado_lanca_excecao()
+    {
+        var item = new ItemNFeRequest { CsosnIcms = "400", OrigemMercadoria = "0" };
+        Assert.Throws<TributacaoNaoSuportadaException>(() => ImpostoIcmsMapper.CriarIcms(item, crt: 1));
     }
 }

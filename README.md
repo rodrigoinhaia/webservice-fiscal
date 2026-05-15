@@ -160,14 +160,16 @@ Sem o header ou com chave inválida, retorna `401 Unauthorized`.
 
 ---
 
-## Tributação (ICMS / Simples Nacional)
+## Tributação (ICMS / Simples Nacional / Lucro Presumido e Real)
 
-`configuracaoEmitente.crt`: **1 ou 2** = Simples Nacional, **3** = regime normal. Por item do XML:
+`configuracaoEmitente.crt`: **1 ou 2** = Simples Nacional, **3** = regime normal (**Lucro Presumido e Lucro Real** usam CRT 3; o ERP envia CST e valores).
 
-- **CRT 3:** informe `cstIcms` (`00`, `40`, `41`, `50`, `60`; CST não suportado usa `00`). Campos opcionais: ST, desoneração, FCP retido, etc., em `ItemNFeRequest`.
-- **CRT 1 ou 2:** informe `csosnIcms` (`101`, `102`, `103`, `201`, `202`, `203`, `500`, `900`; padrão `102`). ST / crédito SN usam os mesmos campos opcionais do item quando aplicável.
+- **CRT 3:** `cstIcms` — `00`, `10`, `20`, `30`, `40`, `41`, `50`, `51`, `60`, `70`, `90` (CST não suportado → **400**, sem fallback silencioso).
+- **CRT 1 ou 2:** `csosnIcms` — `101`, `102`, `103`, `201`, `202`, `203`, `500`, `900` (padrão `102`).
+- **IPI (opcional):** `cstIpi` + `valorIpi` / `aliquotaIpi` — grupos `IPITrib` ou `IPINT` no XML.
+- PIS/COFINS: `cstPis` / `cstCofins` com alíquota (`PISAliq` / `COFINSAliq`).
 
-PIS/COFINS seguem `cstPis` / `cstCofins` com bases e alíquotas (grupo com alíquota).
+Matriz completa: [`docs/TRIBUTACAO-MATRIZ.md`](docs/TRIBUTACAO-MATRIZ.md) · Exemplos JSON: [`docs/exemplos/`](docs/exemplos/) · Roadmap: [`docs/ROADMAP-TRIBUTACAO-REGIMES.md`](docs/ROADMAP-TRIBUTACAO-REGIMES.md).
 
 ---
 
@@ -270,6 +272,8 @@ O campo `nome` é opcional; se omitir, usa o nome do arquivo enviado. A resposta
 ---
 
 ## Exemplo de Chamada — Emissão NF-e
+
+Payloads por regime (Simples, LP, LR): pasta [`docs/exemplos/nfe/`](docs/exemplos/nfe/).
 
 ```bash
 curl -X POST http://localhost:5555/api/nfe/emitir \

@@ -594,6 +594,9 @@ public class NFeService
 
     private static string ClassificarExcecao(Exception ex)
     {
+        if (ex is TributacaoNaoSuportadaException)
+            return "TributacaoInvalida";
+
         var msg = ex.Message.ToLowerInvariant();
         if (msg.Contains("certificado") || msg.Contains("pfx") || msg.Contains("senha"))
             return "CertificadoInvalido";

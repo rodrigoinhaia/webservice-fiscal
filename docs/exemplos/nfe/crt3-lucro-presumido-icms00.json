@@ -1,0 +1,53 @@
+{
+  "configuracaoEmitente": {
+    "cnpj": "00000000000000",
+    "razaoSocial": "EMPRESA LUCRO PRESUMIDO LTDA",
+    "ie": "0000000000",
+    "crt": 3,
+    "uf": "RS",
+    "ambiente": "Homologacao",
+    "certificadoPath": "empresa.pfx",
+    "certificadoSenha": "senha-do-pfx"
+  },
+  "numeroNota": 1,
+  "serie": "1",
+  "naturezaOperacao": "Venda de Mercadoria",
+  "destinatario": {
+    "cnpj": "00000000000000",
+    "razaoSocial": "CLIENTE TESTE LTDA",
+    "indicadorIe": 1,
+    "ie": "0000000000"
+  },
+  "itens": [
+    {
+      "numeroItem": 1,
+      "codigoProduto": "001",
+      "descricaoProduto": "PRODUTO LP ICMS 00",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "unidadeComercial": "UN",
+      "quantidadeComercial": 2,
+      "valorUnitarioComercial": 50,
+      "valorTotalBruto": 100,
+      "cstIcms": "00",
+      "origemMercadoria": "0",
+      "baseCalculoIcms": 100,
+      "aliquotaIcms": 18,
+      "valorIcms": 18,
+      "cstPis": "01",
+      "baseCalculoPis": 100,
+      "aliquotaPis": 0.65,
+      "valorPis": 0.65,
+      "cstCofins": "01",
+      "baseCalculoCofins": 100,
+      "aliquotaCofins": 3,
+      "valorCofins": 3
+    }
+  ],
+  "pagamentos": [
+    {
+      "formaPagamento": "01",
+      "valorPagamento": 100
+    }
+  ]
+}

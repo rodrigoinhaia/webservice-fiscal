@@ -1,0 +1,58 @@
+{
+  "configuracaoEmitente": {
+    "cnpj": "00000000000000",
+    "razaoSocial": "EMPRESA LUCRO REAL LTDA",
+    "ie": "0000000000",
+    "crt": 3,
+    "uf": "SP",
+    "ambiente": "Homologacao",
+    "certificadoPath": "empresa.pfx",
+    "certificadoSenha": "senha-do-pfx"
+  },
+  "numeroNota": 1,
+  "serie": "1",
+  "indicadorDestinatario": 2,
+  "destinatario": {
+    "cnpj": "00000000000000",
+    "razaoSocial": "CLIENTE INTERESTADUAL LTDA",
+    "indicadorIe": 1,
+    "ie": "0000000000",
+    "endereco": {
+      "logradouro": "Rua Exemplo",
+      "numero": "100",
+      "bairro": "Centro",
+      "codigoMunicipio": "3550308",
+      "municipio": "Sao Paulo",
+      "uf": "SP",
+      "cep": "01001000"
+    }
+  },
+  "itens": [
+    {
+      "numeroItem": 1,
+      "codigoProduto": "ST01",
+      "descricaoProduto": "PRODUTO LR COM ST",
+      "ncm": "22030000",
+      "cfop": "6403",
+      "unidadeComercial": "UN",
+      "quantidadeComercial": 10,
+      "valorUnitarioComercial": 20,
+      "valorTotalBruto": 200,
+      "cstIcms": "10",
+      "origemMercadoria": "0",
+      "baseCalculoIcms": 200,
+      "aliquotaIcms": 12,
+      "valorIcms": 24,
+      "baseCalculoIcmsSt": 250,
+      "aliquotaIcmsSt": 18,
+      "valorIcmsSt": 21,
+      "percentualMvaSt": 25
+    }
+  ],
+  "pagamentos": [
+    {
+      "formaPagamento": "15",
+      "valorPagamento": 221
+    }
+  ]
+}

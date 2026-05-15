@@ -29,6 +29,11 @@ public class ItemNFeRequest
     public decimal? ValorIcms { get; set; }
     public decimal? ReducaoBaseIcms { get; set; }
 
+    /// <summary>CST 51 — valor da operação antes do diferimento.</summary>
+    public decimal? ValorIcmsOperacao { get; set; }
+    public decimal? PercentualDiferimentoIcms { get; set; }
+    public decimal? ValorIcmsDiferido { get; set; }
+
     /// <summary>ICMS ST e retidos (CST 60, CSOSN 201/202/203/500 etc.).</summary>
     public decimal? BaseCalculoIcmsSt { get; set; }
     public decimal? AliquotaIcmsSt { get; set; }
@@ -65,6 +70,8 @@ public class ItemNFeRequest
 
     // IPI
     public string? CstIpi { get; set; }
+    public decimal? BaseCalculoIpi { get; set; }
+    public decimal? AliquotaIpi { get; set; }
     public decimal? ValorIpi { get; set; }
 
     public decimal? ValorDesconto { get; set; }

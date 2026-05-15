@@ -1,4 +1,5 @@
 using FiscalService.Api.Models.Requests;
+using FiscalService.Api.Services.Fiscal;
 using FluentValidation;
 
 namespace FiscalService.Api.Validation;
@@ -26,5 +27,12 @@ public sealed class NFeEmitirRequestValidator : AbstractValidator<NFeEmitirReque
         RuleFor(x => x.Destinatario).NotNull();
         RuleFor(x => x.Itens).NotEmpty();
         RuleForEach(x => x.Itens).SetValidator(itemValidator);
+
+        RuleForEach(x => x.Itens).Custom((item, ctx) =>
+        {
+            var crt = ctx.InstanceToValidate.ConfiguracaoEmitente.Crt;
+            if (!ImpostoTributacaoCatalog.ValidarItem(item, crt, out var msg))
+                ctx.AddFailure(nameof(ItemNFeRequest), msg);
+        });
     }
 }

@@ -1,0 +1,47 @@
+{
+  "configuracaoEmitente": {
+    "cnpj": "00000000000000",
+    "razaoSocial": "INDUSTRIA COM IPI LTDA",
+    "crt": 3,
+    "uf": "RS",
+    "ambiente": "Homologacao",
+    "certificadoPath": "empresa.pfx",
+    "certificadoSenha": "senha-do-pfx"
+  },
+  "numeroNota": 1,
+  "serie": "1",
+  "destinatario": {
+    "cnpj": "00000000000000",
+    "razaoSocial": "DISTRIBUIDOR LTDA",
+    "indicadorIe": 1,
+    "ie": "0000000000"
+  },
+  "itens": [
+    {
+      "numeroItem": 1,
+      "codigoProduto": "IND01",
+      "descricaoProduto": "PRODUTO INDUSTRIALIZADO",
+      "ncm": "39269090",
+      "cfop": "5101",
+      "unidadeComercial": "UN",
+      "quantidadeComercial": 5,
+      "valorUnitarioComercial": 40,
+      "valorTotalBruto": 200,
+      "cstIcms": "00",
+      "origemMercadoria": "0",
+      "baseCalculoIcms": 200,
+      "aliquotaIcms": 18,
+      "valorIcms": 36,
+      "cstIpi": "50",
+      "baseCalculoIpi": 200,
+      "aliquotaIpi": 5,
+      "valorIpi": 10
+    }
+  ],
+  "pagamentos": [
+    {
+      "formaPagamento": "01",
+      "valorPagamento": 210
+    }
+  ]
+}

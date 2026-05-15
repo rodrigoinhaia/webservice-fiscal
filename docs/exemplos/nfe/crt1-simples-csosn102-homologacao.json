@@ -1,0 +1,41 @@
+{
+  "configuracaoEmitente": {
+    "cnpj": "00000000000000",
+    "razaoSocial": "EMPRESA SIMPLES LTDA",
+    "ie": "0000000000",
+    "crt": 1,
+    "uf": "RS",
+    "ambiente": "Homologacao",
+    "certificadoPath": "empresa.pfx",
+    "certificadoSenha": "senha-do-pfx"
+  },
+  "numeroNota": 1,
+  "serie": "1",
+  "naturezaOperacao": "Venda de Mercadoria",
+  "destinatario": {
+    "cpf": "00000000000",
+    "razaoSocial": "CONSUMIDOR FINAL",
+    "indicadorIe": 9
+  },
+  "itens": [
+    {
+      "numeroItem": 1,
+      "codigoProduto": "001",
+      "descricaoProduto": "PRODUTO TESTE SIMPLES",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "unidadeComercial": "UN",
+      "quantidadeComercial": 1,
+      "valorUnitarioComercial": 100,
+      "valorTotalBruto": 100,
+      "csosnIcms": "102",
+      "origemMercadoria": "0"
+    }
+  ],
+  "pagamentos": [
+    {
+      "formaPagamento": "01",
+      "valorPagamento": 100
+    }
+  ]
+}
