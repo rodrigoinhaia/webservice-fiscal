@@ -66,6 +66,7 @@ public class NFeService
         {
             request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
             ImpostoTributacaoCatalog.ValidarItensOuLancar(request.ConfiguracaoEmitente.Crt, request.Itens);
+            NFeTotaisCalculator.ValidarConsistenciaOuLancar(request.Itens);
 
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente, request.TipoEmissao);
             var nfe = ConstruirNFe(request, config);
@@ -365,7 +366,7 @@ public class NFeService
         var tpEmis = ContingenciaEmissaoMapper.Resolver(req.TipoEmissao);
 
         var itens = req.Itens.Select((item, idx) => ConstruirItem(item, idx + 1, emitente.Crt)).ToList();
-        var totalNota = CalcularTotais(req.Itens);
+        var totalNota = NFeTotaisCalculator.Calcular(req.Itens);
 
         var ideNota = new ide
         {
@@ -428,32 +429,7 @@ public class NFeService
                 det = itens,
                 total = new total
                 {
-                    ICMSTot = new ICMSTot
-                    {
-                        vBC = totalNota.BaseIcms,
-                        vICMS = totalNota.Icms,
-                        vICMSDeson = 0,
-                        vFCP = 0,
-                        vBCST = 0,
-                        vST = 0,
-                        vFCPST = 0,
-                        vFCPSTRet = 0,
-                        vProd = totalNota.Produtos,
-                        vFrete = totalNota.Frete,
-                        vSeg = totalNota.Seguro,
-                        vDesc = totalNota.Desconto,
-                        vII = 0,
-                        vIPI = totalNota.Ipi,
-                        vIPIDevol = 0,
-                        vPIS = totalNota.Pis,
-                        vCOFINS = totalNota.Cofins,
-                        vOutro = totalNota.Outras,
-                        vNF = totalNota.TotalNota,
-                        vTotTrib = 0,
-                        vFCPUFDest = totalNota.FcpUfDest > 0 ? totalNota.FcpUfDest : null,
-                        vICMSUFDest = totalNota.IcmsUfDest > 0 ? totalNota.IcmsUfDest : null,
-                        vICMSUFRemet = totalNota.IcmsUfRemet > 0 ? totalNota.IcmsUfRemet : null
-                    }
+                    ICMSTot = NFeTotaisCalculator.MontarIcmsTot(totalNota)
                 },
                 transp = new transp
                 {
@@ -543,33 +519,6 @@ public class NFeService
             },
             imposto = ImpostoItemFactory.Criar(item, crt)
         };
-    }
-
-    private static (decimal BaseIcms, decimal Icms, decimal Produtos, decimal Frete, decimal Seguro,
-                    decimal Desconto, decimal Ipi, decimal Pis, decimal Cofins, decimal Outras, decimal TotalNota,
-                    decimal FcpUfDest, decimal IcmsUfDest, decimal IcmsUfRemet)
-        CalcularTotais(List<ItemNFeRequest> itens)
-    {
-        return (
-            BaseIcms: itens.Sum(i => i.BaseCalculoIcms ?? 0),
-            Icms: itens.Sum(i => i.ValorIcms ?? 0),
-            Produtos: itens.Sum(i => i.ValorTotalBruto),
-            Frete: itens.Sum(i => i.ValorFrete ?? 0),
-            Seguro: itens.Sum(i => i.ValorSeguro ?? 0),
-            Desconto: itens.Sum(i => i.ValorDesconto ?? 0),
-            Ipi: itens.Sum(i => i.ValorIpi ?? 0),
-            Pis: itens.Sum(i => i.ValorPis ?? 0),
-            Cofins: itens.Sum(i => i.ValorCofins ?? 0),
-            Outras: itens.Sum(i => i.ValorOutrasDespesas ?? 0),
-            TotalNota: itens.Sum(i => i.ValorTotalBruto)
-                - itens.Sum(i => i.ValorDesconto ?? 0)
-                + itens.Sum(i => i.ValorFrete ?? 0)
-                + itens.Sum(i => i.ValorSeguro ?? 0)
-                + itens.Sum(i => i.ValorOutrasDespesas ?? 0),
-            FcpUfDest: itens.Sum(i => i.ValorFcpUfDest ?? 0),
-            IcmsUfDest: itens.Sum(i => i.ValorIcmsUfDest ?? 0),
-            IcmsUfRemet: itens.Sum(i => i.ValorIcmsUfRemet ?? 0)
-        );
     }
 
     private async Task RegistrarLogAsync(string cnpj, string modelo, string serie, int numero,

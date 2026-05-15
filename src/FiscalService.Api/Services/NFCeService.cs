@@ -19,6 +19,7 @@ using NFe.Classes.Informacoes.Detalhe.Tributacao.Estadual.Tipos;
 using NFe.Classes.Informacoes.Emitente;
 using NFe.Classes.Informacoes.Identificacao;
 using NFe.Classes.Informacoes.Identificacao.Tipos;
+using NFe.Classes.Informacoes.Observacoes;
 using NFe.Classes.Informacoes.Pagamento;
 using NFe.Classes.Informacoes.Total;
 using NFe.Classes.Informacoes.Transporte;
@@ -65,6 +66,7 @@ public class NFCeService
         {
             request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
             ImpostoTributacaoCatalog.ValidarItensOuLancar(request.ConfiguracaoEmitente.Crt, request.Itens);
+            NFeTotaisCalculator.ValidarConsistenciaOuLancar(request.Itens);
 
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
             var nfce = ConstruirNFCe(request, config);
@@ -227,11 +229,8 @@ public class NFCeService
         var dhEmissao = DateTimeOffset.Now;
 
         var itens = req.Itens.Select((item, idx) => ConstruirItem(item, idx + 1, req.ConfiguracaoEmitente.Crt)).ToList();
-        var totalProdutos = req.Itens.Sum(i => i.ValorTotalBruto);
-        var totalDesconto = req.Itens.Sum(i => i.ValorDesconto ?? 0);
-        var totalNota = totalProdutos - totalDesconto;
-
-        var troco = req.Pagamentos.Sum(p => p.ValorPagamento) - totalNota;
+        var totais = NFeTotaisCalculator.Calcular(req.Itens);
+        var troco = req.Pagamentos.Sum(p => p.ValorPagamento) - totais.ValorNota;
 
         return new NFe.Classes.NFe
         {
@@ -283,29 +282,7 @@ public class NFCeService
                 det = itens,
                 total = new total
                 {
-                    ICMSTot = new ICMSTot
-                    {
-                        vBC = req.Itens.Sum(i => i.BaseCalculoIcms ?? 0),
-                        vICMS = req.Itens.Sum(i => i.ValorIcms ?? 0),
-                        vICMSDeson = 0,
-                        vFCP = 0,
-                        vBCST = 0,
-                        vST = 0,
-                        vFCPST = 0,
-                        vFCPSTRet = 0,
-                        vProd = totalProdutos,
-                        vFrete = 0,
-                        vSeg = 0,
-                        vDesc = totalDesconto,
-                        vII = 0,
-                        vIPI = 0,
-                        vIPIDevol = 0,
-                        vPIS = req.Itens.Sum(i => i.ValorPis ?? 0),
-                        vCOFINS = req.Itens.Sum(i => i.ValorCofins ?? 0),
-                        vOutro = 0,
-                        vNF = totalNota,
-                        vTotTrib = 0
-                    }
+                    ICMSTot = NFeTotaisCalculator.MontarIcmsTot(totais)
                 },
                 transp = new transp { modFrete = ModalidadeFrete.mfSemFrete },
                 pag = new List<pag>
@@ -317,8 +294,12 @@ public class NFCeService
                             tPag = (FormaPagamento)int.Parse(p.FormaPagamento),
                             vPag = p.ValorPagamento
                         }).ToList(),
-                        vTroco = troco > 0 ? troco : (decimal?)null
+                        vTroco = troco > 0 ? troco : null
                     }
+                },
+                infAdic = string.IsNullOrWhiteSpace(req.InformacoesAdicionais) ? null : new infAdic
+                {
+                    infCpl = req.InformacoesAdicionais
                 }
             },
             infNFeSupl = new infNFeSupl { qrCode = string.Empty, urlChave = string.Empty }

@@ -1,0 +1,30 @@
+{
+  "emitenteCnpj": "00000000000000",
+  "numeroNota": 1,
+  "serie": "1",
+  "naturezaOperacao": "Venda ao consumidor",
+  "idCsc": "1",
+  "csc": "SEU_CSC_HOMOLOGACAO",
+  "qrCodeVersao": "2",
+  "itens": [
+    {
+      "numeroItem": 1,
+      "codigoProduto": "001",
+      "descricaoProduto": "ITEM NFC-E TESTE",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "unidadeComercial": "UN",
+      "quantidadeComercial": 1,
+      "valorUnitarioComercial": 10,
+      "valorTotalBruto": 10,
+      "csosnIcms": "102",
+      "origemMercadoria": "0"
+    }
+  ],
+  "pagamentos": [
+    {
+      "formaPagamento": "01",
+      "valorPagamento": 10
+    }
+  ]
+}

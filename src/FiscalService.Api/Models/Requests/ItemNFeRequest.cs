@@ -27,6 +27,8 @@ public class ItemNFeRequest
     public decimal? BaseCalculoIcms { get; set; }
     public decimal? AliquotaIcms { get; set; }
     public decimal? ValorIcms { get; set; }
+    /// <summary>FCP próprio (ICMS) — soma em <c>ICMSTot.vFCP</c>.</summary>
+    public decimal? ValorFcp { get; set; }
     public decimal? ReducaoBaseIcms { get; set; }
 
     /// <summary>CST 51 — valor da operação antes do diferimento.</summary>
@@ -38,6 +40,8 @@ public class ItemNFeRequest
     public decimal? BaseCalculoIcmsSt { get; set; }
     public decimal? AliquotaIcmsSt { get; set; }
     public decimal? ValorIcmsSt { get; set; }
+    /// <summary>FCP sobre ST — soma em <c>ICMSTot.vFCPST</c>.</summary>
+    public decimal? ValorFcpSt { get; set; }
     public decimal? PercentualMvaSt { get; set; }
     public decimal? PercentualReducaoBcSt { get; set; }
     public decimal? BaseCalculoIcmsStRetido { get; set; }

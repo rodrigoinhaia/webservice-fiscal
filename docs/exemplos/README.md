@@ -14,6 +14,10 @@ JSON prontos para `POST /api/nfe/emitir` e correlatos. Ajuste CNPJ, certificado 
 | [nfe/contingencia-svc-an.json](nfe/contingencia-svc-an.json) | — | Contingência SVC-AN |
 | [nfe/distribuicao-dfe.json](nfe/distribuicao-dfe.json) | — | `POST /api/nfe/distribuicao-dfe` |
 | [nfe/manifestar-ciencia.json](nfe/manifestar-ciencia.json) | — | Manifestação ciência (210210) |
+| [nfe/cancelar-homologacao.json](nfe/cancelar-homologacao.json) | — | `POST /api/nfe/cancelar` |
+| [nfe/carta-correcao-homologacao.json](nfe/carta-correcao-homologacao.json) | — | `POST /api/nfe/carta-correcao` |
+| [nfe/pis-cofins-nt.json](nfe/pis-cofins-nt.json) | 3 | PIS/COFINS CST 07 (NT) |
+| [nfce/emitir-homologacao-csc.json](nfce/emitir-homologacao-csc.json) | 1/2 | NFC-e com CSC |
 
 Checklist homologação: [`../SMOKE-HOMOLOGACAO.md`](../SMOKE-HOMOLOGACAO.md).
 

@@ -14,13 +14,14 @@ Plano de tarefas para o `FiscalService.Api` atender **qualquer emissão NF-e/NFC
 | `docs/CAPACIDADES.md` | Estado atual do microsserviço |
 | `README.md` | Exemplos operacionais |
 
-**Estado atual (baseline)** — ver `ImpostoIcmsMapper.cs`, `ImpostoItemFactory.cs`:
+**Estado atual** — ver `ImpostoIcmsMapper.cs`, `ImpostoItemFactory.cs`, `NFeTotaisCalculator.cs`:
 
-- CRT 3: CST `00`, `40`/`41`/`50`, `60` (demais → fallback `ICMS00`)
-- CRT 1/2: CSOSN `101`–`103`, `201`–`203`, `500`, `900` (demais → `102`)
-- PIS/COFINS: só `PISAliq` / `COFINSAliq` (default CST `07`)
-- IPI: campos no DTO, **sem** grupo `<IPI>` no item
-- Sem ISSQN, II, DIFAL dedicado, contingência SVC, cadastro de emitente
+- CRT 3: CST `00`–`90` (rejeição explícita se não suportado)
+- CRT 1/2: CSOSN `101`–`103`, `201`–`203`, `500`, `900`
+- PIS/COFINS: alíquota, quantidade (03), NT, outros
+- IPI, DIFAL (`ICMSUFDest`), totais com FCP/ST/DIFAL
+- Emitentes cadastrados, contingência, DF-e, retry SEFAZ
+- Pendente: ISSQN, II, exportação, async/webhook, homologação com evidências
 
 ---
 
@@ -38,8 +39,8 @@ Objetivo: toda evolução tributária espelha tipos e fluxos da biblioteca, não
 
 | # | Tarefa | Entregável | Referência DFe.NET |
 |---|--------|------------|-------------------|
-| 0.1 | [ ] Documentar versão fixa ou faixa de `Zeus.Net.NFe.NFCe` no `FiscalService.Api.csproj` (evitar `*` em produção) | Seção em `README.md` + `Directory.Packages.props` ou pin de versão | Releases / tags do repositório |
-| 0.2 | [ ] Script ou doc de sincronização de **schemas XSD** (`NFe.AppTeste/Schemas` → `src/FiscalService.Api/Schemas`) | `docs/SCHEMAS-DFE.md` + comando no README | Mesmo path usado em `NFe.AppTeste` |
+| 0.1 | [x] Documentar versão fixa de `Zeus.Net.*` no `FiscalService.Api.csproj` | Pin `2026.5.13.1248` | Releases / tags do repositório |
+| 0.2 | [x] Doc de sincronização de **schemas XSD** | `docs/SCHEMAS-DFE.md` | `NFe.AppTeste/Schemas` |
 | 0.3 | [x] Matriz **CST/CSOSN × classe C#** (`ICMS00`, `ICMSSN102`, …) vs suporte no API | Tabela em `docs/TRIBUTACAO-MATRIZ.md` | `NFe.Classes.Informacoes.Detalhe.Tributacao.Estadual` |
 | 0.4 | [ ] Checklist de conformidade por NT (link MOC + issue DFe.NET se layout divergir) | Item em `PLANNING.md` riscos | Issues/PRs ZeusAutomacao |
 | 0.5 | [ ] Testes de regressão com **XMLs de homologação** gravados (golden files), inspirados em cenários do `NFe.AppTeste` | `tests/.../Fixtures/nfe/*.xml` | AppTeste / manuais SEFAZ |
@@ -58,8 +59,8 @@ Objetivo: cobrir CSTs usados em operações comuns de LP/LR sem fallback silenci
 | 1.4 | [x] **ICMS51** — diferimento | `valorIcmsOperacao`, `percentualDiferimentoIcms`, `valorIcmsDiferido` | `ICMS51` |
 | 1.5 | [x] **ICMS70** — redução + ST | Combinar redução e ST | `ICMS70` |
 | 1.6 | [x] **ICMS90** — outros | Grupo flexível conforme payload | `ICMS90` |
-| 1.7 | [~] **ICMSPart** / partilha (DIFAL) quando `idDest` interestadual consumidor final | `ICMSUFDest` por item + totais básicos | NT 2015/003 — classes UFDest |
-| 1.8 | [ ] **FCP** (`ICMS00` + campos FCP, ST com FCP) | Campos `vFCP`, `vFCPST` nos totais | Grupos FCP no layout 4.0 |
+| 1.7 | [x] **ICMSPart** / partilha (DIFAL) | `ICMSUFDest` por item + totais | NT 2015/003 |
+| 1.8 | [x] **FCP** nos totais (`valorFcp`, `valorFcpSt`, `valorFcpStRetido`) | `NFeTotaisCalculator` → `ICMSTot` | Layout 4.0 |
 | 1.9 | [x] Rejeitar CST não implementado com **400** explícito (não fallback para `00`) | FluentValidation + `TributacaoNaoSuportadaException` | — |
 | 1.10 | [x] Testes unitários por CST (espelhar `ImpostoIcmsMapperTests`) | +1 teste por CST novo | — |
 | 1.11 | [x] Exemplo JSON **LP** e **LR** em `docs/exemplos/nfe/crt3-*.json` | Payloads em `docs/exemplos/nfe/` | AppTeste regime normal |
@@ -88,11 +89,11 @@ Objetivo: federais compatíveis com indústria, atacado e monofásico.
 |---|--------|------------|-----------------|
 | 3.1 | [x] **IPI** no item (`IPITrib`, `IPINT`) conforme `cstIpi` | `ImpostoItemFactory` + testes | `IPI`, `IPITrib`, `IPINT` |
 | 3.2 | [x] **PISNT** / **COFINSNT** (CST 04–09) | `ImpostoItemFactory` | `PISNT`, `COFINSNT` |
-| 3.3 | [ ] **PISQtde** / **COFINSQtde** | Campos qBCProd, vAliqProd | `PISQtde`, `COFINSQtde` |
+| 3.3 | [x] **PISQtde** / **COFINSQtde** | CST `03` | `PISQtde`, `COFINSQtde` |
 | 3.4 | [x] **PISOutr** / **COFINSOutr** (CST 49, 99) | `ImpostoItemFactory` | `PISOutr`, `COFINSOutr` |
-| 3.5 | [ ] Recalcular ou validar **ICMSTot** vs soma dos itens (vProd, vDesc, vST, vIPI, vPIS, vCOFINS) | Validator de consistência | `total.ICMSTot` |
+| 3.5 | [x] Validar **ICMSTot** / consistência de itens | `NFeTotaisCalculator.ValidarConsistenciaOuLancar` | `total.ICMSTot` |
 | 3.6 | [ ] **II** (importação) — grupo quando CFOP de importação | `II` no item + `vII` no total | `II` |
-| 3.7 | [ ] Exemplos `docs/exemplos/nfe/item-com-ipi.json`, `pis-cofins-nt.json` | JSON + nota no README | — |
+| 3.7 | [x] Exemplos `crt3-item-com-ipi.json`, `pis-cofins-nt.json` | `docs/exemplos/nfe/` | — |
 
 ---
 
@@ -151,10 +152,10 @@ Objetivo: operação em produção sem reenviar certificado/senha em toda nota.
 
 | # | Tarefa | Entregável |
 |---|--------|------------|
-| 8.1 | [~] Pasta **`docs/exemplos/`** com JSON por cenário (emitir, cancelar, CC-e, NFC-e) | NF-e por regime entregue; cancelar/NFC-e pendente |
-| 8.2 | [~] **`Swashbuckle`**: exemplos JSON de `docs/exemplos/` | `OpenApiJsonExamplesFilter` (NF-e emitir, emitentes, NFC-e) |
+| 8.1 | [x] Pasta **`docs/exemplos/`** com JSON por cenário | emitir, cancelar, CC-e, NFC-e, DF-e, manifestação |
+| 8.2 | [x] **`Swashbuckle`**: exemplos JSON de `docs/exemplos/` | `OpenApiJsonExamplesFilter` |
 | 8.3 | [ ] Habilitar `GenerateDocumentationFile` + `IncludeXmlComments` nos DTOs | Summaries no Swagger UI |
-| 8.4 | [ ] Página **`docs/GUIA-REGIMES.md`**: CRT 1/2/3, quem calcula o quê (ERP vs API), tabela CST/CSOSN suportados | Link no README |
+| 8.4 | [x] **`docs/GUIA-REGIMES.md`** | CRT, CST/CSOSN, ERP vs API |
 | 8.5 | [x] Atualizar **`CAPACIDADES.md`** §6 e §20 a cada fase concluída | Emitentes, DF-e, retry, tributação, health |
 | 8.6 | [ ] Coleção **Insomnia/Postman** exportada (`docs/postman/FiscalService.json`) | Importável |
 | 8.7 | [ ] Referência cruzada: “equivalente AppTeste” por endpoint (link path GitHub DFe.NET) | Tabela em `GUIA-REGIMES.md` |

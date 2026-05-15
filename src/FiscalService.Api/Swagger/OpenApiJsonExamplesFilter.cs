@@ -12,9 +12,11 @@ public sealed class OpenApiJsonExamplesFilter : IOperationFilter
         ["POST:/api/nfe/emitir"] = "nfe/crt1-simples-csosn102-homologacao.json",
         ["POST:/api/nfe/emitir:emitente"] = "nfe/emitir-via-emitente-cnpj.json",
         ["POST:/api/emitentes"] = "emitente/cadastro-homologacao.json",
-        ["POST:/api/nfce/emitir"] = "nfe/crt1-simples-csosn102-homologacao.json",
         ["POST:/api/nfe/distribuicao-dfe"] = "nfe/distribuicao-dfe.json",
-        ["POST:/api/nfe/manifestar-destinatario"] = "nfe/manifestar-ciencia.json"
+        ["POST:/api/nfe/manifestar-destinatario"] = "nfe/manifestar-ciencia.json",
+        ["POST:/api/nfe/cancelar"] = "nfe/cancelar-homologacao.json",
+        ["POST:/api/nfe/carta-correcao"] = "nfe/carta-correcao-homologacao.json",
+        ["POST:/api/nfce/emitir"] = "nfce/emitir-homologacao-csc.json"
     };
 
     public void Apply(OpenApiOperation operation, OperationFilterContext context)

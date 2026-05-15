@@ -21,10 +21,10 @@
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.*" />
 
-    <!-- DFe.NET — NFe.Danfe.Nativo está embutido em Zeus.Net.NFe.NFCe -->
-    <PackageReference Include="Zeus.Net.NFe.NFCe" Version="*" />
-    <PackageReference Include="Zeus.Net.CTe" Version="*" />
-    <PackageReference Include="Zeus.Net.MDFe" Version="*" />
+    <!-- DFe.NET: NFe.Danfe.Nativo embutido em Zeus.Net.NFe.NFCe. Pin Zeus 2026.5.13.1248 -->
+    <PackageReference Include="Zeus.Net.NFe.NFCe" Version="2026.5.13.1248" />
+    <PackageReference Include="Zeus.Net.CTe" Version="2026.5.13.1248" />
+    <PackageReference Include="Zeus.Net.MDFe" Version="2026.5.13.1248" />
 
     <!-- Swagger / OpenAPI -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.*" />

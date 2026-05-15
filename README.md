@@ -199,7 +199,7 @@ Sem o header ou com chave inválida, retorna `401 Unauthorized`.
 - **PIS/COFINS:** `01`/`02` alíquota; `03` quantidade (`PISQtde`/`COFINSQtde`); `04`–`09` NT; `49`/`99` outros; default `07`.
 - **DIFAL (opcional):** `baseCalculoUfDest`, percentuais e valores → `ICMSUFDest`.
 
-Matriz completa: [`docs/TRIBUTACAO-MATRIZ.md`](docs/TRIBUTACAO-MATRIZ.md) · Exemplos JSON: [`docs/exemplos/`](docs/exemplos/) · Roadmap: [`docs/ROADMAP-TRIBUTACAO-REGIMES.md`](docs/ROADMAP-TRIBUTACAO-REGIMES.md).
+Matriz completa: [`docs/TRIBUTACAO-MATRIZ.md`](docs/TRIBUTACAO-MATRIZ.md) · Guia regimes: [`docs/GUIA-REGIMES.md`](docs/GUIA-REGIMES.md) · Exemplos JSON: [`docs/exemplos/`](docs/exemplos/) · Schemas XSD: [`docs/SCHEMAS-DFE.md`](docs/SCHEMAS-DFE.md) · Roadmap: [`docs/ROADMAP-TRIBUTACAO-REGIMES.md`](docs/ROADMAP-TRIBUTACAO-REGIMES.md).
 
 **Contingência:** em `POST /api/nfe/emitir` use `tipoEmissao`: `Normal`, `SVC-AN`, `SVC-RS` ou `Offline`, com `dataHoraContingencia` e `justificativaContingencia` (mín. 15 caracteres) quando não for normal. Exemplo: [`docs/exemplos/nfe/contingencia-svc-an.json`](docs/exemplos/nfe/contingencia-svc-an.json).
 

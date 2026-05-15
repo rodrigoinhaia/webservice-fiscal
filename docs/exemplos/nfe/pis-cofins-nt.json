@@ -1,0 +1,37 @@
+{
+  "emitenteCnpj": "00000000000000",
+  "numeroNota": 1,
+  "serie": "1",
+  "naturezaOperacao": "Venda",
+  "destinatario": {
+    "cpf": "00000000000",
+    "razaoSocial": "CONSUMIDOR FINAL",
+    "indicadorIe": 9
+  },
+  "itens": [
+    {
+      "numeroItem": 1,
+      "codigoProduto": "001",
+      "descricaoProduto": "PRODUTO PIS COFINS NT",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "unidadeComercial": "UN",
+      "quantidadeComercial": 1,
+      "valorUnitarioComercial": 50,
+      "valorTotalBruto": 50,
+      "cstIcms": "00",
+      "origemMercadoria": "0",
+      "baseCalculoIcms": 50,
+      "aliquotaIcms": 18,
+      "valorIcms": 9,
+      "cstPis": "07",
+      "cstCofins": "07"
+    }
+  ],
+  "pagamentos": [
+    {
+      "formaPagamento": "01",
+      "valorPagamento": 50
+    }
+  ]
+}
