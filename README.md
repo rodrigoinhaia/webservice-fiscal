@@ -66,7 +66,8 @@ O serviço ficará disponível em `http://localhost:5555`.
 - **Porta do container:** `8080` (mapeie a porta pública do painel para `8080`).
 - **Variáveis de ambiente (mínimo):** `ApiKey`, `Database__ConnectionString` (Postgres gerenciado ou URL interna do painel). Opcionalmente `FISCAL__Ambiente`, `FISCAL__TimeoutWs`, etc., como no `docker-compose.yml`.
 - **Persistência:** monte volumes ou disco persistente em `/app/xmls`, `/app/certificados` e `/app/logs` se quiser reter XMLs, certificados e logs entre deploys. Sem volume em `/app/logs`, o app continua no **console** (sink de arquivo é ignorado se o diretório não for gravável). Configure **backup** do volume do Postgres no painel (snapshot ou dump agendado).
-- **Checklist pós-deploy:** ver [docs/SMOKE-HOMOLOGACAO.md](docs/SMOKE-HOMOLOGACAO.md) ou execute `.\scripts\smoke-homologacao.ps1` (PowerShell 5.1+).
+- **Homologação rápida (15 min):** [docs/HOMOLOGACAO-RAPIDA.md](docs/HOMOLOGACAO-RAPIDA.md) → `.\scripts\smoke-minimo.ps1`
+- **Checklist completo:** [docs/SMOKE-HOMOLOGACAO.md](docs/SMOKE-HOMOLOGACAO.md) → `.\scripts\smoke-homologacao.ps1`
 
 ### 4. Verificar saúde
 

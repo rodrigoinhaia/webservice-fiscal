@@ -4,6 +4,12 @@ Checklist manual após deploy ou alteração relevante no `FiscalService.Api`. E
 
 Registre evidências (data, operador, `cStat`, trecho de resposta) em `PROGRESS.md` ou anexo interno do time.
 
+## Homologação rápida (primeira vez)
+
+Guia enxuto com CNPJ/UF e um comando: **[`HOMOLOGACAO-RAPIDA.md`](HOMOLOGACAO-RAPIDA.md)** → `.\scripts\smoke-minimo.ps1`
+
+---
+
 ## Script automatizado (PowerShell)
 
 Na raiz do repositório, com a API no ar e `.env` preenchido (`API_KEY`, `DB_*`, `FISCAL_AMBIENTE=Homologacao`):

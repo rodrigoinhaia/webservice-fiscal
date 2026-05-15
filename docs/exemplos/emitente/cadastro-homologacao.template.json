@@ -1,0 +1,21 @@
+{
+  "cnpj": "SUBSTITUA_14_DIGITOS",
+  "razaoSocial": "RAZAO SOCIAL HOMOLOGACAO LTDA",
+  "nomeFantasia": "HOMOLOGACAO",
+  "ie": "0000000000",
+  "crt": 1,
+  "uf": "RS",
+  "ambiente": "Homologacao",
+  "certificadoPath": "empresa-homologacao.pfx",
+  "certificadoSenha": "SENHA_DO_PFX",
+  "validarCnpjCertificado": true,
+  "endereco": {
+    "logradouro": "Rua Exemplo",
+    "numero": "100",
+    "bairro": "Centro",
+    "codigoMunicipio": "4314902",
+    "municipio": "Porto Alegre",
+    "uf": "RS",
+    "cep": "90000000"
+  }
+}

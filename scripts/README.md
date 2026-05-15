@@ -1,5 +1,19 @@
 # Scripts operacionais
 
+## `smoke-minimo.ps1` (comece aqui)
+
+Homologação em um comando após configurar `scripts/config/homologacao.env`:
+
+```powershell
+copy scripts\config\homologacao.env.example scripts\config\homologacao.env
+# Edite CNPJ, senha do PFX, UF
+.\scripts\smoke-minimo.ps1
+```
+
+Guia: [`docs/HOMOLOGACAO-RAPIDA.md`](../docs/HOMOLOGACAO-RAPIDA.md)
+
+---
+
 ## `smoke-homologacao.ps1`
 
 Automatiza o checklist de homologação SEFAZ documentado em [`docs/SMOKE-HOMOLOGACAO.md`](../docs/SMOKE-HOMOLOGACAO.md).

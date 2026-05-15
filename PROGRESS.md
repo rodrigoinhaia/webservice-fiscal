@@ -62,10 +62,22 @@
 
 ---
 
+## Homologação — evidências (preencher após smoke)
+
+| Data | Operador | CRT | cStat | Chave (44) | Protocolo | Observação |
+|------|----------|-----|-------|------------|-----------|------------|
+| | | 1 Simples | | | | |
+| | | 2 Excesso | | | | |
+| | | 3 LP/LR | | | | |
+
+Comando: `.\scripts\smoke-minimo.ps1` — guia [`docs/HOMOLOGACAO-RAPIDA.md`](docs/HOMOLOGACAO-RAPIDA.md)
+
+---
+
 ## Próximo passo
 
-1. Provisionar certificado e rodar smoke em homologação.  
-2. Registrar em `PROGRESS.md` chaves/protocolos por CRT.  
+1. Preencher tabela acima após `smoke-minimo.ps1` com certificado real.  
+2. CRT 3: `smoke-homologacao.ps1 -EmitirTodosRegimes`.  
 3. Priorizar async/webhook ou DANFE conforme negócio.
 
 ---
