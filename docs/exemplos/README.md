@@ -12,6 +12,10 @@ JSON prontos para `POST /api/nfe/emitir` e correlatos. Ajuste CNPJ, certificado 
 | [nfe/crt3-interestadual-difal.json](nfe/crt3-interestadual-difal.json) | 3 | Interestadual com DIFAL (`ICMSUFDest`) |
 | [nfe/emitir-via-emitente-cnpj.json](nfe/emitir-via-emitente-cnpj.json) | — | Emissão só com `emitenteCnpj` (cadastro prévio) |
 | [nfe/contingencia-svc-an.json](nfe/contingencia-svc-an.json) | — | Contingência SVC-AN |
+| [nfe/distribuicao-dfe.json](nfe/distribuicao-dfe.json) | — | `POST /api/nfe/distribuicao-dfe` |
+| [nfe/manifestar-ciencia.json](nfe/manifestar-ciencia.json) | — | Manifestação ciência (210210) |
+
+Checklist homologação: [`../SMOKE-HOMOLOGACAO.md`](../SMOKE-HOMOLOGACAO.md).
 
 ### Emitente (cadastro)
 

@@ -143,7 +143,7 @@ Objetivo: operação em produção sem reenviar certificado/senha em toda nota.
 | 7.2 | [x] **Distribuição DF-e** + manifestação destinatário | `NFeDfeService` + rotas `/api/nfe/distribuicao-dfe`, `/manifestar-destinatario` | `NfeDistDFeInteresse` |
 | 7.3 | [x] **Retry** político em timeout SEFAZ (falhas transitórias) | `SefazRetry` + `Fiscal:SefazRetry*` | manual |
 | 7.4 | [ ] Emissão **assíncrona** + webhook (opcional) | Fila + callback | — |
-| 7.5 | [ ] Homologação formal: checklist `SMOKE-HOMOLOGACAO.md` por regime (SN, LP, LR) | Evidências em `PROGRESS.md` | — |
+| 7.5 | [~] Homologação formal: checklist `SMOKE-HOMOLOGACAO.md` por regime (SN, LP, LR) | Checklist expandido; evidências em `PROGRESS.md` pendentes de execução real | — |
 
 ---
 
@@ -155,7 +155,7 @@ Objetivo: operação em produção sem reenviar certificado/senha em toda nota.
 | 8.2 | [~] **`Swashbuckle`**: exemplos JSON de `docs/exemplos/` | `OpenApiJsonExamplesFilter` (NF-e emitir, emitentes, NFC-e) |
 | 8.3 | [ ] Habilitar `GenerateDocumentationFile` + `IncludeXmlComments` nos DTOs | Summaries no Swagger UI |
 | 8.4 | [ ] Página **`docs/GUIA-REGIMES.md`**: CRT 1/2/3, quem calcula o quê (ERP vs API), tabela CST/CSOSN suportados | Link no README |
-| 8.5 | [ ] Atualizar **`CAPACIDADES.md`** §6 e §20 a cada fase concluída | Manutenção contínua |
+| 8.5 | [x] Atualizar **`CAPACIDADES.md`** §6 e §20 a cada fase concluída | Emitentes, DF-e, retry, tributação, health |
 | 8.6 | [ ] Coleção **Insomnia/Postman** exportada (`docs/postman/FiscalService.json`) | Importável |
 | 8.7 | [ ] Referência cruzada: “equivalente AppTeste” por endpoint (link path GitHub DFe.NET) | Tabela em `GUIA-REGIMES.md` |
 

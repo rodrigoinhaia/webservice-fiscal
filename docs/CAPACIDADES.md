@@ -109,6 +109,12 @@ Todos exigem header `X-Api-Key` exceto `/health`. Formato JSON em request/respon
 | POST | `/api/nfe/consultar` | `NfeConsultaProtocolo` por chave de 44 dígitos |
 | POST | `/api/nfe/inutilizar` | `NfeInutilizacao` de faixa (mesma série) |
 | GET | `/api/nfe/status-sefaz` | `NfeStatusServico` (querystring com dados de emitente) |
+| POST | `/api/nfe/distribuicao-dfe` | `NfeDistDFeInteresse` — download de DF-e por NSU/chave (`NFeDfeController`) |
+| POST | `/api/nfe/manifestar-destinatario` | Manifestação do destinatário (210200–210240) |
+
+Emissão NF-e aceita **`tipoEmissao`**: `Normal`, `SVC-AN`, `SVC-RS`, `Offline` (mapeados para `tpEmis` via `ContingenciaEmissaoMapper`). Em contingência: `dataHoraContingencia` e `justificativaContingencia` (≥15 caracteres).
+
+Chamadas SEFAZ usam **retry transitório** (`SefazRetry`) configurável em `Fiscal:SefazRetry*`.
 
 ### 4.2 NFC-e — `NFCeController` (`/api/nfce`)
 
@@ -212,30 +218,48 @@ Resposta:
 
 Ordenação: `dataEmissao DESC`. Sem registros → `total = 0` e `itens` vazia.
 
-### 4.10 Saúde — Endpoint global
+### 4.10 Emitentes — `EmitentesController` (`/api/emitentes`)
+
+Cadastro persistente de emitentes com certificado A1 (senha criptografada via **Data Protection**).
+
+| Método | Rota | Operação |
+|---|---|---|
+| POST | `/api/emitentes` | Cria emitente; opcional `validarCnpjCertificado` (CNPJ do PFX = CNPJ cadastrado) |
+| GET | `/api/emitentes/{cnpj}` | Consulta por CNPJ (14 dígitos) |
+| GET | `/api/emitentes` | Lista paginada (`pagina`, `tamanhoPagina`, `ativo`) |
+| PUT | `/api/emitentes/{cnpj}` | Atualiza dados/certificado |
+| DELETE | `/api/emitentes/{cnpj}` | Desativa (soft delete) |
+
+Emissão e eventos NF-e/NFC-e aceitam **`emitenteCnpj`** no body em vez de repetir `configuracaoEmitente` + senha do PFX (`IEmitenteConfigSource` → `EmitenteService.ResolverConfiguracaoAsync`).
+
+### 4.11 Saúde — Endpoint global
 
 | Método | Rota | Observações |
 |---|---|---|
-| GET | `/health` | Sem autenticação · sem rate limit · payload custom (status + banco + schemas) |
+| GET | `/health` | Sem autenticação · sem rate limit · payload custom (status + banco + schemas + certificados) |
 
-### 4.11 Documentação interativa
+### 4.12 Documentação interativa
 
 - **Swagger UI** em `/swagger` no ambiente `Development` — inclui:
   - Definição de segurança `ApiKey` no header `X-Api-Key`.
   - Filtro `OpenApiCommonResponsesOperationFilter` que documenta respostas
     `400`, `401`, `422` e `429` em todas as operações.
+  - Filtro `OpenApiJsonExamplesFilter` — exemplos de `docs/exemplos/` em rotas selecionadas (emitir NF-e, emitentes, NFC-e, distribuição DF-e, manifestação).
 
 ---
 
 ## 5. Modelos de Domínio (DTOs)
 
-### 5.1 Request comum: `ConfiguracaoEmitenteRequest`
+### 5.1 Request comum: `ConfiguracaoEmitenteRequest` e `emitenteCnpj`
 
-Reutilizado em **todos** os endpoints fiscais (corpo da requisição).
+Endpoints fiscais implementam `IEmitenteConfigSource`:
+
+- **`emitenteCnpj`** (recomendado): carrega emitente do banco; senha do PFX só em runtime.
+- **`configuracaoEmitente`**: modo legado / testes pontuais (CNPJ, certificado, senha no body).
 
 | Campo | Obrigatório | Descrição |
 |---|---|---|
-| `cnpj` | Sim | 14 dígitos (validado via FluentValidation) |
+| `cnpj` | Sim* | 14 dígitos (validado via FluentValidation) — *quando usa `configuracaoEmitente` |
 | `razaoSocial` | Sim | Até 120 caracteres |
 | `nomeFantasia` | Não | |
 | `ie` | Não | Inscrição estadual |
@@ -261,6 +285,31 @@ Reutilizado em **todos** os endpoints fiscais (corpo da requisição).
 | `itens` | [] | Lista de `ItemNFeRequest` (não vazia) |
 | `pagamentos` | [] | Lista de `PagamentoRequest` |
 | `informacoesAdicionais` | null | Texto livre (`infCpl`) |
+| `tipoEmissao` | `Normal` | `Normal` · `SVC-AN` · `SVC-RS` · `Offline` |
+| `dataHoraContingencia` | — | Obrigatório em contingência (exceto quando omitido → usa dhEmi) |
+| `justificativaContingencia` | — | ≥15 caracteres em contingência |
+
+### 5.2.1 Distribuição DF-e — `NFeDistribuicaoDfeRequest`
+
+| Campo | Descrição |
+|---|---|
+| `emitenteCnpj` / `configuracaoEmitente` | Credenciais (ver §5.1) |
+| `documentoInteressado` | CNPJ/CPF do destinatário (default: CNPJ do emitente) |
+| `ultNsu` | Último NSU recebido (default `"0"`) |
+| `nsu` | Consulta por NSU específico |
+| `chaveAcesso` | Consulta por chave (44 dígitos) |
+
+Resposta: `DistribuicaoDfeResponse` (`ultNsu`, `maxNsu`, `documentos[]` com XML descompactado, `xmlRetorno`).
+
+### 5.2.2 Manifestação — `NFeManifestarDestinatarioRequest`
+
+| Campo | Descrição |
+|---|---|
+| `chaveAcesso` | 44 dígitos |
+| `tipoManifestacao` | `Ciencia` (210210), `Confirmacao` (210200), `Desconhecimento` (210220), `NaoRealizada` (210240) ou código numérico |
+| `justificativa` | Obrigatória (≥15 chars) para `NaoRealizada` |
+| `sequenciaEvento` | Default `1` |
+| `documentoManifestante` | CNPJ/CPF (default: CNPJ do emitente) |
 
 ### 5.3 NFC-e — `NFCeEmitirRequest`
 
@@ -300,10 +349,15 @@ Cobre **NF-e e NFC-e**. Campos essenciais:
 - Identificação: `codigoProduto`, `codigoEan` (ou `"SEM GTIN"`), `descricaoProduto`, `ncm`, `cest`, `cfop`.
 - Comerciais: `unidadeComercial`, `quantidadeComercial`, `valorUnitarioComercial`, `valorTotalBruto`, `indicadorTotal`.
 - Tributáveis: variantes `unidadeTributavel`, `quantidadeTributavel`, `valorUnitarioTributavel`.
-- ICMS: `cstIcms` ou `csosnIcms`, `origemMercadoria`, base, alíquota, valor; suporte a ICMS-ST e FCP-ST (CST 60, CSOSN 201/202/203/500/900).
-- PIS / COFINS: CST + base + alíquota + valor.
-- IPI: CST + valor.
+- ICMS: `cstIcms` ou `csosnIcms`, `origemMercadoria`, base, alíquota, valor; CST 00/10/20/30/40/41/50/51/60/70/90 (CRT 3); CSOSN 101–103, 201–203, 500, 900 (CRT 1/2); ST, diferimento (51), desoneração.
+- PIS / COFINS: CST `01`/`02` → alíquota; `03` → quantidade (`PISQtde`/`COFINSQtde`); `04`–`09` → NT; `49`/`99` → outros; default `07`.
+- IPI: CST tributado (`IPITrib`) ou não tributado (`IPINT`).
+- DIFAL: `baseCalculoUfDest`, percentuais e valores UF destino/remetente → `ICMSUFDest`.
 - Outros: `valorDesconto`, `valorFrete`, `valorSeguro`, `valorOutrasDespesas`, `informacaoAdicional`.
+
+Validação por CRT: `ImpostoTributacaoCatalog.ValidarItensOuLancar` → HTTP 422 `TributacaoInvalida` se CST/CSOSN não suportado.
+
+Matriz e exemplos: `docs/TRIBUTACAO-MATRIZ.md`, `docs/exemplos/nfe/`.
 
 ### 5.7 Pagamento — `PagamentoRequest`
 
@@ -344,28 +398,23 @@ Em falha:
 
 Tipos de erro classificados (`ClassificarExcecao`):
 `RejeicaoSefaz`, `CertificadoInvalido`, `ServicoIndisponivel`,
-`ValidacaoSchema`, `NaoAutorizado`, `LimiteExcedido`, `NaoSuportado`,
+`ValidacaoSchema`, `TributacaoInvalida`, `EmitenteNaoEncontrado`,
+`Validacao`, `NaoAutorizado`, `LimiteExcedido`, `NaoSuportado`,
 `ErroInterno`.
 
 ---
 
 ## 6. Tributação e Mapeamento Fiscal
 
-`Services/Fiscal/ImpostoItemFactory.cs` + `ImpostoIcmsMapper.cs` montam o grupo
-`<imposto>` do XML conforme:
+`ImpostoTributacaoCatalog`, `ImpostoIcmsMapper` e `ImpostoItemFactory` montam o grupo `<imposto>` sem fallback silencioso (CST/CSOSN não mapeado → exceção).
 
-- **CRT 3 (Regime Normal):**
-  - CST `00` → `ICMS00` (operação tributada)
-  - CST `40 / 41 / 50` → `ICMS40` (isenta / não-tributada / suspensão, com desoneração opcional)
-  - CST `60` → `ICMS60` (ST retido — base, alíquota, FCP-ST, valores efetivos)
-- **CRT 1/2 (Simples Nacional):**
-  - CSOSN `101`, `102` (default), `103`, `201`, `202`, `203`, `500`, `900`
-  - Cobre crédito permitido, ST, FCP-ST, redução de base e cenários "outros".
-- **PIS / COFINS:** sempre `PISAliq` / `COFINSAliq` (CST default `07` quando ausente).
-- **Origem da mercadoria:** numérico 0–8 (`OrigemMercadoria`).
+- **CRT 3 (Lucro Presumido / Real):** CST `00`, `10`, `20`, `30`, `40`, `41`, `50`, `51`, `60`, `70`, `90` → classes `ICMS00` … `ICMS90` conforme DFe.NET.
+- **CRT 1/2 (Simples):** CSOSN `101`, `102` (default), `103`, `201`, `202`, `203`, `500`, `900` — não informar `cstIcms` no item.
+- **PIS / COFINS:** `01`/`02` alíquota; `03` quantidade; `04`–`09` NT; `49`/`99` outros; ausente → `07` NT.
+- **IPI:** opcional; `IPITrib` ou `IPINT`.
+- **DIFAL:** grupo `ICMSUFDest` quando o ERP enviar bases e alíquotas interestaduais.
 
-A normalização de CST (2 dígitos) e CSOSN (3 dígitos) é feita na própria fábrica
-para evitar erros de schema SEFAZ.
+Documentação viva: `docs/TRIBUTACAO-MATRIZ.md`, `docs/ROADMAP-TRIBUTACAO-REGIMES.md`.
 
 ---
 
@@ -396,7 +445,20 @@ Auditoria de toda emissão / evento bem-sucedido pelos serviços fiscais.
 
 Atualização de status (cancelamento) via `AtualizarStatusLogAsync` por chave.
 
-### 7.2 `numeracoes_sequenciais`
+### 7.2 `emitentes`
+
+Cadastro de emitentes com certificado A1 (migration `AddEmitentes`).
+
+| Coluna | Descrição |
+|---|---|
+| `cnpj` | PK, 14 dígitos |
+| `razao_social`, `nome_fantasia`, `ie`, `crt`, `uf` | Dados fiscais |
+| `certificado_path` | Path do `.pfx` (relativo a `DiretorioCertificados` ou absoluto) |
+| `certificado_senha_protegida` | Senha criptografada (`CertificadoSenhaProtector`) |
+| `ambiente` | `Homologacao` / `Producao` |
+| `ativo` | Soft delete |
+
+### 7.3 `numeracoes_sequenciais`
 
 | Coluna | Tipo | Descrição |
 |---|---|---|
@@ -645,12 +707,18 @@ métrica automaticamente — **toda emissão / evento gera telemetria**.
   "versao": "1.0.0",
   "timestamp": "2025-04-24T10:00:00Z",
   "banco": "healthy",
-  "schemas": "ok"
+  "certificados": "healthy",
+  "schemas": "ok",
+  "checks": {
+    "postgresql": "healthy",
+    "certificados_emitentes": "healthy"
+  }
 }
 ```
 
 Verificações:
 - **`postgresql`** via `AspNetCore.HealthChecks.NpgSql` (tags `db`, `sql`).
+- **`certificados_emitentes`** (`CertificadosEmitentesHealthCheck`): para cada emitente ativo, verifica existência do `.pfx` e validade; **degraded** se expira em menos de `Fiscal:DiasAlertaCertificado` dias (default 30); **unhealthy** se expirado ou arquivo ausente.
 - **Schemas XSD** — checa existência do diretório `Fiscal:DiretorioSchemas`
   (necessário para validação XML do DFe.NET).
 
@@ -683,7 +751,7 @@ Antes do `WebApplication.CreateBuilder`:
 | `ApiKey` | string | Chave(s) válida(s) (ver `ApiKeyRing`) |
 | `RateLimiting` | `RateLimitingConfig` | `Enabled`, `PermitLimit`, `WindowSeconds` |
 | `OpenTelemetry` | `OpenTelemetryConfig` | `Enabled`, `OtlpEndpoint` |
-| `Fiscal` | `FiscalConfig` | `Ambiente`, `SalvarXmls`, `DiretorioXmls`, `DiretorioSchemas`, `DiretorioCertificados`, `TimeoutWs` |
+| `Fiscal` | `FiscalConfig` | `Ambiente`, `SalvarXmls`, diretórios, `TimeoutWs`, `DiasAlertaCertificado`, `SefazRetryHabilitado`, `SefazRetryMaxTentativas`, `SefazRetryIntervaloMs` |
 | `Database` | string | `ConnectionString` Npgsql |
 | `Serilog` | nativo | `MinimumLevel`, `WriteTo`, `File`, `Enrich` |
 
@@ -698,6 +766,10 @@ Antes do `WebApplication.CreateBuilder`:
 | `Database__ConnectionString` | Connection string explícita | — |
 | `FISCAL_AMBIENTE` | `Homologacao` ou `Producao` | `Homologacao` |
 | `FISCAL_TIMEOUT_WS` | Timeout SEFAZ (s) | `30` |
+| `Fiscal__DiasAlertaCertificado` | Alerta de vencimento no `/health` | `30` |
+| `Fiscal__SefazRetryHabilitado` | Retry em falha transitória SEFAZ | `true` |
+| `Fiscal__SefazRetryMaxTentativas` | Tentativas (inclui a 1ª) | `3` |
+| `Fiscal__SefazRetryIntervaloMs` | Backoff base entre tentativas | `1000` |
 | `RateLimiting__Enabled` | Liga rate limit | `true` |
 | `RateLimiting__PermitLimit` | Permits/janela | `180` |
 | `RateLimiting__WindowSeconds` | Janela (s) | `60` |
@@ -818,9 +890,9 @@ Documentados via `OpenApiCommonResponsesOperationFilter` (Swagger):
 | **Certificado A3 / HSM** | Apenas A1 (`.pfx`) está implementado (`TipoCertificado.A1Arquivo`). |
 | **Modais MDF-e ≥ 02** | Construção do modal apenas para **rodoviário** (`MDFeRodo`); demais não montados. |
 | **CT-e tributação** | ICMS00 fixo a 12% no construtor — para cenários ICMS-ST/Reduzido use evolução do `CTeService`. |
-| **Contingência SVC-AN/RS** | `tpEmis` fixo em `teNormal` na emissão NF-e/NFC-e (ver `RoadMap`). |
-| **Distribuição DF-e / Manifestação** | Não exposto; pode ser adicionado consumindo `NFeDistribuicaoDFe`. |
+| **FCP nos totais da NF-e** | DIFAL por item (`ICMSUFDest`); totais `vFCP`/`vFCPST` no `ICMSTot` ainda não agregados automaticamente — ERP deve refletir no payload quando necessário. |
 | **Webhooks / Emissão assíncrona** | Não implementado — todos os endpoints são síncronos (`IndicadorSincronizacao.Sincrono`). |
+| **Idempotência de emissão por chave** | Retry SEFAZ cobre só rede/timeout; reenvio do mesmo XML em erro de negócio exige tratamento no cliente. |
 | **Autenticação** | Apenas API Key compartilhada. Não há OAuth / JWT / mTLS. |
 | **Multi-tenant nativo** | O multitenant é por CNPJ no payload; não há isolamento por organização (sem RLS). |
 
@@ -835,11 +907,14 @@ Da seção *Fase 3* do `PLANNING.md` (atualizado conforme o que já foi entregue
 - ✅ Endpoint de consulta de **logs de emissão** com filtros e paginação
   (`GET /api/emissoes`, `GET /api/emissoes/{chave}`).
 - ⏳ DANFE multiplataforma (DanfeSharp / QuestPDF / serviço externo).
-- ⏳ Suporte a **contingência** SVC-AN / SVC-RS.
+- ✅ **Contingência** SVC-AN / SVC-RS / Offline na NF-e (`tipoEmissao`).
+- ✅ **Retry** em falha transitória SEFAZ (`SefazRetry`).
+- ✅ **Distribuição DF-e** e **manifestação do destinatário**.
+- ✅ **Cadastro de emitentes** + emissão por `emitenteCnpj`.
+- ✅ Tributação ampliada (ICMS por CST/CSOSN, IPI, PIS/COFINS incl. CST 03, DIFAL).
 - ⏳ Endpoints **assíncronos com callback webhook**.
-- ⏳ **Retry automático** em falha de conectividade SEFAZ.
 - ⏳ Suporte a **certificado A3 / HSM**.
-- ⏳ Distribuição DF-e / Manifestação do Destinatário.
+- ⏳ Homologação formal documentada em `docs/SMOKE-HOMOLOGACAO.md` (evidências por regime).
 - ⏳ Pipeline CI/CD ampliado e cobertura de testes ≥ 80%.
 
 ---
@@ -855,7 +930,12 @@ Da seção *Fase 3* do `PLANNING.md` (atualizado conforme o que já foi entregue
 | Configuração fiscal | `src/FiscalService.Api/Config/FiscalConfig.cs` |
 | Telemetria | `src/FiscalService.Api/Telemetry/FiscalTelemetry.cs`, `FiscalResponseTelemetryFilter.cs` |
 | Logs | `src/FiscalService.Api/Configuration/SerilogFileSinkHelper.cs` |
-| Swagger | `src/FiscalService.Api/Swagger/OpenApiCommonResponsesOperationFilter.cs` |
+| Swagger | `src/FiscalService.Api/Swagger/OpenApiCommonResponsesOperationFilter.cs`, `OpenApiJsonExamplesFilter.cs` |
+| Emitentes | `src/FiscalService.Api/Services/EmitenteService.cs`, `Controllers/EmitentesController.cs`, `Data/Entities/Emitente.cs` |
+| DF-e / manifestação | `src/FiscalService.Api/Services/NFeDfeService.cs`, `Controllers/NFeDfeController.cs` |
+| Retry SEFAZ | `src/FiscalService.Api/Services/Fiscal/SefazRetry.cs` |
+| Contingência | `src/FiscalService.Api/Services/Fiscal/ContingenciaEmissaoMapper.cs` |
+| Health certificados | `src/FiscalService.Api/HealthChecks/CertificadosEmitentesHealthCheck.cs` |
 | EF Core | `src/FiscalService.Api/Data/AppDbContext.cs`, `Data/Entities/*.cs`, `Migrations/*` |
 | Numeração | `src/FiscalService.Api/Services/NumeracaoService.cs` |
 | Certificado | `src/FiscalService.Api/Services/CertificadoService.cs` |
@@ -866,7 +946,7 @@ Da seção *Fase 3* do `PLANNING.md` (atualizado conforme o que já foi entregue
 | CT-e | `src/FiscalService.Api/Services/CTeService.cs`, `Controllers/CTeController.cs` |
 | MDF-e | `src/FiscalService.Api/Services/MDFeService.cs`, `Controllers/MDFeController.cs` |
 | DANFE | `src/FiscalService.Api/Services/DanfeService.cs`, `Controllers/DanfeController.cs`, `Services/DanfeHtml/DanfeHtmlRenderer.cs` |
-| Tributação ICMS / PIS / COFINS | `src/FiscalService.Api/Services/Fiscal/ImpostoIcmsMapper.cs`, `ImpostoItemFactory.cs` |
+| Tributação ICMS / PIS / COFINS / IPI | `src/FiscalService.Api/Services/Fiscal/ImpostoIcmsMapper.cs`, `ImpostoItemFactory.cs`, `ImpostoTributacaoCatalog.cs` |
 | UF → IBGE | `src/FiscalService.Api/Helpers/UfHelper.cs` |
 | Validações | `src/FiscalService.Api/Validation/*Validator.cs` |
 | Testes | `tests/FiscalService.Api.Tests/`, `tests/FiscalService.Api.IntegrationTests/` |
