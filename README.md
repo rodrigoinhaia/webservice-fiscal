@@ -1,8 +1,12 @@
 # FiscalService — WebService REST para Emissão Fiscal Brasileira
 
+[![Release](https://img.shields.io/github/v/release/rodrigoinhaia/webservice-fiscal?label=release)](https://github.com/rodrigoinhaia/webservice-fiscal/releases/latest)
+
 Microsserviço em **ASP.NET Core 8** para emissão de documentos fiscais eletrônicos brasileiros via REST API. Utiliza [DFe.NET (ZeusAutomacao)](https://github.com/ZeusAutomacao/DFe.NET) para NF-e/NFC-e/CT-e/MDF-e (SEFAZ) e [OpenAC.Net.NFSe.Nacional](https://github.com/OpenAC-Net/OpenAC.Net.NFSe.Nacional) para **NFS-e Padrão Nacional** (ADN).
 
 Compatível com **Docker/Linux** — sem dependência de Windows ou interface gráfica.
+
+**Versão atual:** [v1.1.0](https://github.com/rodrigoinhaia/webservice-fiscal/releases/tag/v1.1.0) — NFS-e Padrão Nacional (ADN), emitente com IM/e-mail, migration de chave 50 dígitos.
 
 > **Visão completa de capacidades:** [`docs/CAPACIDADES.md`](docs/CAPACIDADES.md)
 > · Plano: [`PLANNING.md`](PLANNING.md) · Status: [`PROGRESS.md`](PROGRESS.md)
@@ -80,11 +84,12 @@ Resposta esperada:
 ```json
 {
   "status": "healthy",
-  "versao": "1.0.0",
+  "versao": "1.1.0",
   "timestamp": "2025-04-24T10:00:00Z",
   "banco": "healthy",
   "certificados": "healthy",
   "schemas": "ok",
+  "schemasNfse": "ok",
   "checks": {
     "postgresql": "healthy",
     "certificados_emitentes": "healthy"
@@ -480,15 +485,27 @@ Você também pode definir `Database__ConnectionString` completa no compose, se 
 
 - **Certificados A1**: nunca versionar arquivos `.pfx`. Use o endpoint de upload ou monte como volume.
 - **XMLs autorizados**: são documentos fiscais legais. Os volumes devem ter backup adequado.
-- **Thread-safety**: os serviços de emissão são instanciados como `Transient` porque o DFe.NET não é thread-safe.
+- **Thread-safety**: serviços de emissão (Zeus e OpenAC NFS-e) são `Transient` — as bibliotecas fiscais não são thread-safe.
 - **Numeração**: o `NumeracaoService` usa `SELECT FOR UPDATE` (PostgreSQL) para garantir atomicidade.
 - **DANFE**: no Linux o endpoint pode responder `NaoSuportado` até integrar um gerador PDF multiplataforma — ver [docs/DANFE-ESTRATEGIA.md](docs/DANFE-ESTRATEGIA.md).
 - **Reforma Tributária**: manter o pacote `Zeus.Net.NFe.NFCe` sempre na versão mais recente.
 
 ---
 
+## Releases
+
+| Versão | Destaques |
+|--------|-----------|
+| [**v1.1.0**](https://github.com/rodrigoinhaia/webservice-fiscal/releases/tag/v1.1.0) | Módulo **NFS-e Padrão Nacional** (`OpenAC.Net.NFSe.Nacional` 1.5.0): emitir, cancelar, consultar, DANFSe; schemas `Schemas/NFSe/`; `Fiscal:NFSe:*`; emitente com `inscricaoMunicipal` e `email`; migration chave 50 / série 5. |
+| v1.0.0 | MVP NF-e/NFC-e/CT-e/MDF-e, cadastro de emitentes, tributação ampliada, Docker, CI. |
+
+Novidades e notas de upgrade: [GitHub Releases](https://github.com/rodrigoinhaia/webservice-fiscal/releases).
+
+---
+
 ## Referências
 
 - [DFe.NET (ZeusAutomacao)](https://github.com/ZeusAutomacao/DFe.NET)
+- [OpenAC.Net.NFSe.Nacional](https://github.com/OpenAC-Net/OpenAC.Net.NFSe.Nacional)
 - [Portal NF-e SEFAZ](http://www.nfe.fazenda.gov.br)
 - [Unimake DFe](https://github.com/Unimake/DFe) — referência de implementação REST
