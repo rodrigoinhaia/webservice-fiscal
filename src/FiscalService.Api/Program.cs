@@ -3,6 +3,7 @@ using FiscalService.Api.Configuration;
 using FiscalService.Api.Data;
 using FiscalService.Api.Middlewares;
 using FiscalService.Api.Services;
+using FiscalService.Api.Services.NFSe;
 using FiscalService.Api.HealthChecks;
 using FiscalService.Api.Swagger;
 using FiscalService.Api.Telemetry;
@@ -61,7 +62,42 @@ try
         return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Schemas"));
     }
 
-    // .env na raiz do repositório (ou acima do diretório de trabalho) + aliases API_KEY/DB_PASSWORD → config ASP.NET
+    string ResolveDiretorioSchemasNfse(string configured)
+    {
+        if (!string.IsNullOrWhiteSpace(configured) && Directory.Exists(configured))
+            return Path.GetFullPath(configured);
+
+        var cwd = Directory.GetCurrentDirectory();
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Schemas", "NFSe"),
+            Path.Combine(cwd, "Schemas", "NFSe"),
+            Path.Combine(cwd, "src", "FiscalService.Api", "Schemas", "NFSe"),
+        };
+
+        foreach (var d in candidates)
+        {
+            try
+            {
+                var full = Path.GetFullPath(d);
+                if (Directory.Exists(full))
+                {
+                    Log.Information("Fiscal:NFSe:DiretorioSchemas resolvido para {Path}", full);
+                    return full;
+                }
+            }
+            catch
+            {
+                // ignora path inválido
+            }
+        }
+
+        return Path.GetFullPath(string.IsNullOrWhiteSpace(configured)
+            ? Path.Combine(AppContext.BaseDirectory, "Schemas", "NFSe")
+            : configured);
+    }
+
+    // .env na raiz do repositório
     EnvBootstrap.Apply();
 
     var builder = WebApplication.CreateBuilder(args);
@@ -90,6 +126,10 @@ try
     if (!Path.IsPathRooted(fiscalConfig.DiretorioSchemas))
         fiscalConfig.DiretorioSchemas = Path.Combine(Directory.GetCurrentDirectory(), fiscalConfig.DiretorioSchemas);
     fiscalConfig.DiretorioSchemas = ResolveDiretorioSchemas(fiscalConfig.DiretorioSchemas);
+
+    if (!Path.IsPathRooted(fiscalConfig.NFSe.DiretorioSchemas))
+        fiscalConfig.NFSe.DiretorioSchemas = Path.Combine(Directory.GetCurrentDirectory(), fiscalConfig.NFSe.DiretorioSchemas);
+    fiscalConfig.NFSe.DiretorioSchemas = ResolveDiretorioSchemasNfse(fiscalConfig.NFSe.DiretorioSchemas);
 
     builder.Services.AddSingleton(fiscalConfig);
 
@@ -166,6 +206,8 @@ try
     builder.Services.AddTransient<DanfeService>();
     builder.Services.AddTransient<NumeracaoService>();
     builder.Services.AddTransient<CertificadoService>();
+    builder.Services.AddTransient<NFSeOpenAcFactory>();
+    builder.Services.AddTransient<NFSeService>();
     builder.Services.AddScoped<EmissaoLogService>();
 
     var otelCfg = builder.Configuration.GetSection(OpenTelemetryConfig.SectionName).Get<OpenTelemetryConfig>() ?? new();
@@ -309,6 +351,9 @@ try
                     : "desconhecido",
                 certificados = certEntry,
                 schemas = Directory.Exists(fiscalConfig.DiretorioSchemas) ? "ok" : "diretorio_nao_encontrado",
+                schemasNfse = !fiscalConfig.NFSe.Habilitado
+                    ? "modulo_desabilitado"
+                    : Directory.Exists(fiscalConfig.NFSe.DiretorioSchemas) ? "ok" : "diretorio_nao_encontrado",
                 checks = report.Entries.ToDictionary(
                     e => e.Key,
                     e => e.Value.Status.ToString().ToLowerInvariant())

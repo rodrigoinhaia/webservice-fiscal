@@ -12,6 +12,8 @@ public class EmitenteResponse
     public string Ambiente { get; set; } = string.Empty;
     public string CertificadoPath { get; set; } = string.Empty;
     public bool Ativo { get; set; }
+    public string? InscricaoMunicipal { get; set; }
+    public string? Email { get; set; }
     public DateTime CriadoEm { get; set; }
     public DateTime AtualizadoEm { get; set; }
     public EnderecoEmitenteResponse? Endereco { get; set; }

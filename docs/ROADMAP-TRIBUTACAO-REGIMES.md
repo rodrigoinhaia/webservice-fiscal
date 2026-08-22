@@ -39,7 +39,7 @@ Objetivo: toda evolução tributária espelha tipos e fluxos da biblioteca, não
 
 | # | Tarefa | Entregável | Referência DFe.NET |
 |---|--------|------------|-------------------|
-| 0.1 | [x] Documentar versão fixa de `Zeus.Net.*` no `FiscalService.Api.csproj` | Pin `2026.5.13.1248` | Releases / tags do repositório |
+| 0.1 | [x] Documentar versão fixa de `Zeus.Net.*` no `FiscalService.Api.csproj` | Pin `2026.8.18.2047` | Releases / tags do repositório |
 | 0.2 | [x] Doc de sincronização de **schemas XSD** | `docs/SCHEMAS-DFE.md` | `NFe.AppTeste/Schemas` |
 | 0.3 | [x] Matriz **CST/CSOSN × classe C#** (`ICMS00`, `ICMSSN102`, …) vs suporte no API | Tabela em `docs/TRIBUTACAO-MATRIZ.md` | `NFe.Classes.Informacoes.Detalhe.Tributacao.Estadual` |
 | 0.4 | [ ] Checklist de conformidade por NT (link MOC + issue DFe.NET se layout divergir) | Item em `PLANNING.md` riscos | Issues/PRs ZeusAutomacao |

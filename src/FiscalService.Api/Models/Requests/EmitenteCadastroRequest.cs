@@ -27,6 +27,9 @@ public class EmitenteCadastroRequest
 
     public EnderecoRequest? Endereco { get; set; }
 
+    public string? InscricaoMunicipal { get; set; }
+    public string? Email { get; set; }
+
     /// <summary>Se true, valida se o CNPJ do certificado coincide com o CNPJ cadastrado.</summary>
     public bool ValidarCnpjCertificado { get; set; } = true;
 }

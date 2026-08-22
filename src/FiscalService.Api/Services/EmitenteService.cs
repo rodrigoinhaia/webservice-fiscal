@@ -107,6 +107,8 @@ public sealed class EmitenteService
 
         if (request.Endereco is not null)
             AplicarEndereco(entidade, request.Endereco);
+        if (request.InscricaoMunicipal is not null) entidade.InscricaoMunicipal = request.InscricaoMunicipal.Trim();
+        if (request.Email is not null) entidade.Email = request.Email.Trim();
 
         if (request.Ativo.HasValue) entidade.Ativo = request.Ativo.Value;
         entidade.AtualizadoEm = DateTime.UtcNow;
@@ -232,6 +234,8 @@ public sealed class EmitenteService
         e.AtualizadoEm = agora;
         e.Ativo = true;
         if (r.Endereco is not null) AplicarEndereco(e, r.Endereco);
+        e.InscricaoMunicipal = r.InscricaoMunicipal?.Trim();
+        e.Email = r.Email?.Trim();
         return e;
     }
 
@@ -258,6 +262,8 @@ public sealed class EmitenteService
         Uf = e.Uf,
         Ambiente = e.Ambiente,
         CertificadoPath = e.CertificadoPath,
+        InscricaoMunicipal = e.InscricaoMunicipal,
+        Email = e.Email,
         Ativo = e.Ativo,
         CriadoEm = e.CriadoEm,
         AtualizadoEm = e.AtualizadoEm,

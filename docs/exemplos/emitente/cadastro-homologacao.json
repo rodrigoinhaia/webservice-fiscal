@@ -17,5 +17,7 @@
     "municipio": "Porto Alegre",
     "uf": "RS",
     "cep": "90000000"
-  }
+  },
+  "inscricaoMunicipal": "123456",
+  "email": "fiscal@empresa.com.br"
 }

@@ -34,6 +34,9 @@ public sealed class FiscalConfig
     /// <summary>Intervalo base em ms entre tentativas (multiplicado pelo número da tentativa).</summary>
     public int SefazRetryIntervaloMs { get; set; } = 1000;
 
+    /// <summary>Configuração do módulo NFS-e Padrão Nacional.</summary>
+    public NfseConfig NFSe { get; set; } = new();
+
     /// <summary>Resolve um path de certificado relativo para absoluto.</summary>
     public string ResolveCertificadoPath(string path)
     {

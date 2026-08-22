@@ -31,6 +31,9 @@ Publicável em VPS com **Easypanel** (Docker), sem dependência de interface gr�
 | RF17 | Upload de certificado A1 |
 | RF18 | Controle de numeração sequencial por CNPJ/modelo/série (com lock atômico) |
 | RF19 | Health check com verificação de conectividade PostgreSQL |
+| RF20 | Emitir NFS-e Padrão Nacional (DPS → ADN/Sefin) |
+| RF21 | Cancelar NFS-e Nacional (evento ADN) |
+| RF22 | Consultar NFS-e por chave (50 dígitos) e baixar DANFSe (PDF base64) |
 
 ## Requisitos Não-Funcionais (RNF)
 
@@ -65,12 +68,15 @@ Services (orquestra DFe.NET + AppDbContext)
     ├── NFCeService
     ├── CTeService
     ├── MDFeService
+    ├── NFSeService          ← OpenAC (ADN REST, isolado do Zeus)
     ├── DanfeService
     ├── NumeracaoService
     └── CertificadoService
     │
     ├── DFe.NET (Zeus.Net.NFe.NFCe, Zeus.Net.CTe, Zeus.Net.MDFe)
     │       └── SEFAZ (SOAP/HTTPS)
+    ├── OpenAC.Net.NFSe.Nacional 1.5.0
+    │       └── ADN / Sefin NFS-e Nacional (REST)
     │
     └── AppDbContext (PostgreSQL via Npgsql/EF Core)
             ├── EmissaoLog
@@ -85,6 +91,7 @@ Services (orquestra DFe.NET + AppDbContext)
 |--------|-----------|
 | Framework | ASP.NET Core 8 (Controllers) |
 | Emissão Fiscal | DFe.NET — ZeusAutomacao (`Zeus.Net.NFe.NFCe`, `Zeus.Net.CTe`, `Zeus.Net.MDFe`) |
+| NFS-e Nacional | `OpenAC.Net.NFSe.Nacional` 1.5.0 (Ambiente Nacional / ADN) |
 | DANFE PDF | `NFe.Danfe.Nativo` + `PdfSharpCore` (Linux-safe) |
 | ORM | EF Core 8 + Npgsql |
 | Banco | PostgreSQL 16 |
@@ -146,6 +153,14 @@ FiscalService/
 - Suporte a contingência SVC-AN / SVC-RS
 - Endpoints assíncronos com callback webhook
 - Retry automático em falha de conectividade SEFAZ
+
+### Fase 4 — NFS-e Padrão Nacional
+- Módulo isolado `NFSeService` + `OpenAC.Net.NFSe.Nacional`
+- Endpoints `/api/nfse` (emitir, cancelar, consultar, DANFSe)
+- Schemas XSD em `Schemas/NFSe/` (separados do DFe.NET)
+- Emitente: `inscricaoMunicipal`, `email` (opcionais)
+- Numeração modelo interno `NS`; chave de log até 50 dígitos
+- Homologação ADN (checklist, sem impacto NF-e)
 
 ---
 

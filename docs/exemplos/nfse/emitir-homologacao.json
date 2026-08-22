@@ -1,0 +1,35 @@
+{
+  "emitenteCnpj": "00000000000000",
+  "serie": "1",
+  "competencia": "2026-08-01",
+  "prestador": {
+    "email": "fiscal@empresa.com.br",
+    "inscricaoMunicipal": "123456"
+  },
+  "tomador": {
+    "cnpj": "98765432000100",
+    "nome": "CLIENTE TOMADOR LTDA",
+    "email": "financeiro@cliente.com.br",
+    "endereco": {
+      "logradouro": "Avenida Brasil",
+      "numero": "1500",
+      "bairro": "Centro",
+      "codigoMunicipio": "4314902",
+      "municipio": "Porto Alegre",
+      "uf": "RS",
+      "cep": "90000000"
+    }
+  },
+  "servico": {
+    "codTributacaoNacional": "010101",
+    "codTributacaoMunicipio": "001",
+    "descricao": "Prestacao de servicos de desenvolvimento de software.",
+    "codigoMunicipioPrestacao": "4314902"
+  },
+  "valores": {
+    "valorServico": 1500.0,
+    "issqn": "OperacaoTributavel",
+    "tipoRetencaoIssqn": "NaoRetido",
+    "aliquotaIss": 2.0
+  }
+}

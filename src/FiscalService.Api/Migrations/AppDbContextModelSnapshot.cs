@@ -17,7 +17,7 @@ namespace FiscalService.Api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.27")
+                .HasAnnotation("ProductVersion", "8.0.30")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -38,8 +38,8 @@ namespace FiscalService.Api.Migrations
                         .HasColumnName("ambiente");
 
                     b.Property<string>("ChaveAcesso")
-                        .HasMaxLength(44)
-                        .HasColumnType("character varying(44)")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("chave_acesso");
 
                     b.Property<string>("Cnpj")
@@ -49,8 +49,8 @@ namespace FiscalService.Api.Migrations
                         .HasColumnName("cnpj");
 
                     b.Property<string>("CodigoStatus")
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
                         .HasColumnName("codigo_status");
 
                     b.Property<DateTime>("DataEmissao")
@@ -83,8 +83,8 @@ namespace FiscalService.Api.Migrations
 
                     b.Property<string>("Serie")
                         .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
                         .HasColumnName("serie");
 
                     b.Property<string>("Status")
@@ -180,10 +180,20 @@ namespace FiscalService.Api.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("crt");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("email");
+
                     b.Property<string>("Ie")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("ie");
+
+                    b.Property<string>("InscricaoMunicipal")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("inscricao_municipal");
 
                     b.Property<string>("Logradouro")
                         .HasMaxLength(120)
@@ -254,8 +264,8 @@ namespace FiscalService.Api.Migrations
 
                     b.Property<string>("Serie")
                         .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
                         .HasColumnName("serie");
 
                     b.Property<DateTime>("UltimaAtualizacao")

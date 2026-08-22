@@ -11,6 +11,8 @@ public class EmitenteAtualizarRequest
     public string? CertificadoPath { get; set; }
     public string? CertificadoSenha { get; set; }
     public EnderecoRequest? Endereco { get; set; }
+    public string? InscricaoMunicipal { get; set; }
+    public string? Email { get; set; }
     public bool? Ativo { get; set; }
     public bool ValidarCnpjCertificado { get; set; } = true;
 }

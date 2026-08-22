@@ -41,7 +41,7 @@ eletrônicos brasileiros via [DFe.NET / ZeusAutomacao](https://github.com/ZeusAu
 |---|---|
 | Stack | ASP.NET Core 8 (Controllers) — `.NET 8.0` |
 | Linguagem | C# 12, `Nullable` habilitado, `ImplicitUsings` ligado |
-| Bibliotecas fiscais | `Zeus.Net.NFe.NFCe`, `Zeus.Net.CTe`, `Zeus.Net.MDFe` (família DFe.NET) |
+| Bibliotecas fiscais | `Zeus.Net.NFe.NFCe`, `Zeus.Net.CTe`, `Zeus.Net.MDFe` (família DFe.NET) + `OpenAC.Net.NFSe.Nacional` 1.5.0 |
 | ORM / Banco | EF Core 8 + Npgsql + **PostgreSQL 16** |
 | Infra / Deploy | Docker (Linux), Docker Compose, Easypanel-friendly |
 | Observabilidade | Serilog (console + arquivo rotativo) + OpenTelemetry OTLP opcional |
@@ -67,15 +67,14 @@ Objetivo: **backend fiscal centralizado** consumível por qualquer cliente HTTP
 └────────────────────────────────────────────────────────────────┘
 ```
 
-- Controllers — `src/FiscalService.Api/Controllers/` (9 controllers).
+- Controllers — `src/FiscalService.Api/Controllers/` (10 controllers, incl. `NFSeController`).
 - Services — `src/FiscalService.Api/Services/` (orquestração + DFe.NET + persistência de logs).
 - Models — DTOs de entrada/saída em `Models/Requests` e `Models/Responses`.
 - Data — `Data/AppDbContext.cs` + `Data/Entities` (EmissaoLog, NumeracaoSequencial).
 - Helpers — `Helpers/UfHelper.cs` (UF → `Estado` IBGE).
 - Infra — `Configuration/`, `Config/`, `Middlewares/`, `Telemetry/`, `Swagger/`.
 
-**Decisão crítica:** todos os serviços fiscais são **`Transient`** — `DFe.NET` **não é
-thread-safe**; cada requisição instancia um pipeline isolado.
+**Decisão crítica:** serviços fiscais Zeus **e** `NFSeService` são **`Transient`** — bibliotecas de emissão **não são thread-safe**.
 
 ---
 
@@ -87,6 +86,9 @@ thread-safe**; cada requisição instancia um pipeline isolado.
 | **NFC-e** | `65` | 4.0 | Emitir (com CSC, IdCSC, QR Code v1/v2/v3) · Cancelar |
 | **CT-e** | `57` | 4.0 | Emitir · Cancelar |
 | **MDF-e** | `58` | 3.0 | Emitir · Encerrar · Cancelar |
+| **NFS-e Nacional** | `NS` (interno) | DPS 1.01 | Emitir DPS · Cancelar · Consultar ADN · DANFSe PDF |
+
+> **NFS-e** usa [OpenAC.Net.NFSe.Nacional](https://github.com/OpenAC-Net/OpenAC.Net.NFSe.Nacional) (REST ADN), **não** SEFAZ SOAP. ISSQN na NF-e (item) é roadmap separado — ver limitações.
 
 Todos os ambientes: **Homologação** ou **Produção** (campo `ambiente` no emitente).
 
@@ -138,7 +140,20 @@ Chamadas SEFAZ usam **retry transitório** (`SefazRetry`) configurável em `Fisc
 | POST | `/api/mdfe/encerrar` | Encerramento com UF + município de encerramento |
 | POST | `/api/mdfe/cancelar` | Evento de cancelamento |
 
-### 4.5 DANFE / PDF — `DanfeController` (`/api/danfe`)
+### 4.5 NFS-e Nacional — `NFSeController` (`/api/nfse`)
+
+Módulo **isolado** (OpenAC). Desabilitável via `Fiscal:NFSe:Habilitado=false` (404). Chave de acesso **50 dígitos**.
+
+| Método | Rota | Operação |
+|---|---|---|
+| POST | `/api/nfse/emitir` | Monta DPS, assina, envia ao ADN; numeração modelo `NS` |
+| POST | `/api/nfse/cancelar` | Evento de cancelamento (`InfPedReg` / `ChNFSe`) |
+| POST | `/api/nfse/consultar` | Consulta DF-e por chave (distribuição ADN) |
+| GET | `/api/nfse/danfse/{chave}` | PDF DANFSe em base64 (`DanfePdfBase64`) |
+
+Emitente cadastrado pode incluir `inscricaoMunicipal` e `email` (opcionais). Exemplos: `docs/exemplos/nfse/`. Schemas: `docs/SCHEMAS-NFSE.md`.
+
+### 4.6 DANFE / PDF — `DanfeController` (`/api/danfe`)
 
 | Método | Rota | Operação |
 |---|---|---|
@@ -891,6 +906,8 @@ Documentados via `OpenApiCommonResponsesOperationFilter` (Swagger):
 | **Modais MDF-e ≥ 02** | Construção do modal apenas para **rodoviário** (`MDFeRodo`); demais não montados. |
 | **CT-e tributação** | ICMS00 fixo a 12% no construtor — para cenários ICMS-ST/Reduzido use evolução do `CTeService`. |
 | **FCP nos totais da NF-e** | DIFAL por item (`ICMSUFDest`); totais `vFCP`/`vFCPST` no `ICMSTot` ainda não agregados automaticamente — ERP deve refletir no payload quando necessário. |
+| **NFS-e municipal legado (ABRASF)** | Apenas **Padrão Nacional** (ADN). Provedores Fiorilli/ISSNet etc. fora do escopo inicial. |
+| **ISSQN na NF-e (item)** | Distinto do módulo NFS-e; grupo `imposto.ISSQN` ainda não implementado na NF-e. |
 | **Webhooks / Emissão assíncrona** | Não implementado — todos os endpoints são síncronos (`IndicadorSincronizacao.Sincrono`). |
 | **Idempotência de emissão por chave** | Retry SEFAZ cobre só rede/timeout; reenvio do mesmo XML em erro de negócio exige tratamento no cliente. |
 | **Autenticação** | Apenas API Key compartilhada. Não há OAuth / JWT / mTLS. |
@@ -911,6 +928,7 @@ Da seção *Fase 3* do `PLANNING.md` (atualizado conforme o que já foi entregue
 - ✅ **Retry** em falha transitória SEFAZ (`SefazRetry`).
 - ✅ **Distribuição DF-e** e **manifestação do destinatário**.
 - ✅ **Cadastro de emitentes** + emissão por `emitenteCnpj`.
+- ✅ **NFS-e Padrão Nacional** (OpenAC, `/api/nfse`, schemas isolados).
 - ✅ Tributação ampliada (ICMS por CST/CSOSN, IPI, PIS/COFINS incl. CST 03, DIFAL).
 - ⏳ Endpoints **assíncronos com callback webhook**.
 - ⏳ Suporte a **certificado A3 / HSM**.

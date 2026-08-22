@@ -16,22 +16,22 @@ public class EmissaoLog
     [Column("cnpj")]
     public string Cnpj { get; set; } = string.Empty;
 
-    /// <summary>Modelo do documento: "55" (NF-e), "65" (NFC-e), "57" (CT-e), "58" (MDF-e).</summary>
+    /// <summary>Modelo do documento: "55", "65", "57", "58", "NS" (NFS-e).</summary>
     [Required]
     [MaxLength(2)]
     [Column("modelo")]
     public string Modelo { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(3)]
+    [MaxLength(5)]
     [Column("serie")]
     public string Serie { get; set; } = string.Empty;
 
     [Column("numero")]
     public int Numero { get; set; }
 
-    /// <summary>Chave de acesso de 44 dígitos.</summary>
-    [MaxLength(44)]
+    /// <summary>Chave de acesso (44 dígitos NF-e; 50 dígitos NFS-e Nacional).</summary>
+    [MaxLength(50)]
     [Column("chave_acesso")]
     public string? ChaveAcesso { get; set; }
 
@@ -45,8 +45,8 @@ public class EmissaoLog
     [Column("status")]
     public string Status { get; set; } = string.Empty;
 
-    /// <summary>Código de status retornado pela SEFAZ (cStat).</summary>
-    [MaxLength(3)]
+    /// <summary>Código de status retornado pela SEFAZ (cStat) ou ADN NFS-e.</summary>
+    [MaxLength(10)]
     [Column("codigo_status")]
     public string? CodigoStatus { get; set; }
 

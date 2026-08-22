@@ -37,6 +37,39 @@ public static class SefazRetry
         throw last ?? new InvalidOperationException($"SEFAZ {operacao}: falha sem exceção capturada.");
     }
 
+    public static async Task<T> ExecuteAsync<T>(
+        FiscalConfig config,
+        ILogger logger,
+        string operacao,
+        Func<Task<T>> action)
+    {
+        if (!config.SefazRetryHabilitado || config.SefazRetryMaxTentativas <= 1)
+            return await action();
+
+        var max = config.SefazRetryMaxTentativas;
+        var baseDelay = Math.Max(100, config.SefazRetryIntervaloMs);
+        Exception? last = null;
+
+        for (var tentativa = 1; tentativa <= max; tentativa++)
+        {
+            try
+            {
+                return await action();
+            }
+            catch (Exception ex) when (tentativa < max && DeveRetentar(ex))
+            {
+                last = ex;
+                var espera = baseDelay * tentativa;
+                logger.LogWarning(ex,
+                    "SEFAZ {Operacao}: falha transitória (tentativa {Tentativa}/{Max}), aguardando {Delay}ms",
+                    operacao, tentativa, max, espera);
+                await Task.Delay(espera);
+            }
+        }
+
+        throw last ?? new InvalidOperationException($"SEFAZ {operacao}: falha sem exceção capturada.");
+    }
+
     public static bool DeveRetentar(Exception ex)
     {
         if (ex is TributacaoNaoSuportadaException or ArgumentException or KeyNotFoundException)

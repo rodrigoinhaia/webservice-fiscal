@@ -82,6 +82,14 @@ public class Emitente
     [Column("telefone")]
     public string? Telefone { get; set; }
 
+    [MaxLength(20)]
+    [Column("inscricao_municipal")]
+    public string? InscricaoMunicipal { get; set; }
+
+    [MaxLength(120)]
+    [Column("email")]
+    public string? Email { get; set; }
+
     [Column("ativo")]
     public bool Ativo { get; set; } = true;
 

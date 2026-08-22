@@ -1,6 +1,6 @@
 # FiscalService — WebService REST para Emissão Fiscal Brasileira
 
-Microsserviço em **ASP.NET Core 8** para emissão de documentos fiscais eletrônicos brasileiros via REST API. Utiliza a biblioteca [DFe.NET (ZeusAutomacao)](https://github.com/ZeusAutomacao/DFe.NET) para comunicação com a SEFAZ.
+Microsserviço em **ASP.NET Core 8** para emissão de documentos fiscais eletrônicos brasileiros via REST API. Utiliza [DFe.NET (ZeusAutomacao)](https://github.com/ZeusAutomacao/DFe.NET) para NF-e/NFC-e/CT-e/MDF-e (SEFAZ) e [OpenAC.Net.NFSe.Nacional](https://github.com/OpenAC-Net/OpenAC.Net.NFSe.Nacional) para **NFS-e Padrão Nacional** (ADN).
 
 Compatível com **Docker/Linux** — sem dependência de Windows ou interface gráfica.
 
@@ -19,8 +19,9 @@ Compatível com **Docker/Linux** — sem dependência de Windows ou interface gr
 | NFC-e | 65 | 4.0 | Emitir (CSC/IdCSC), Cancelar |
 | CT-e | 57 | 4.0 | Emitir, Cancelar |
 | MDF-e | 58 | 3.0 | Emitir, Encerrar, Cancelar |
+| NFS-e Nacional | NS | DPS 1.01 | Emitir, Cancelar, Consultar, DANFSe PDF |
 
----
+> NFS-e ≠ ISSQN na NF-e. O módulo de serviços (`/api/nfse`) é independente do grupo ISSQN por item na NF-e (roadmap tributário).
 
 ## Pré-requisitos
 
@@ -28,7 +29,7 @@ Compatível com **Docker/Linux** — sem dependência de Windows ou interface gr
 - [Docker](https://docs.docker.com/get-docker/) + Docker Compose
 - PostgreSQL 16 (ou via Docker Compose)
 - Certificado digital A1 (arquivo `.pfx`) do emitente
-- Schemas XSD do DFe.NET (ver seção abaixo)
+- Schemas XSD do DFe.NET (ver seção abaixo) e NFS-e em `Schemas/NFSe/` — [`docs/SCHEMAS-NFSE.md`](docs/SCHEMAS-NFSE.md)
 
 ---
 
@@ -255,6 +256,19 @@ Com `OpenTelemetry:Enabled=true` **ou** `OTEL_EXPORTER_OTLP_ENDPOINT` definida, 
 | POST | `/api/mdfe/encerrar` | Encerra um MDF-e |
 | POST | `/api/mdfe/cancelar` | Cancela um MDF-e |
 
+### NFS-e Padrão Nacional
+
+Exemplos: [`docs/exemplos/nfse/`](docs/exemplos/nfse/). Requer emitente com `codigoMunicipio`, `email` e (recomendado) `inscricaoMunicipal`.
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/api/nfse/emitir` | Emite DPS → NFS-e (chave 50 dígitos) |
+| POST | `/api/nfse/cancelar` | Cancelamento via evento ADN |
+| POST | `/api/nfse/consultar` | Consulta por chave na distribuição ADN |
+| GET | `/api/nfse/danfse/{chave}` | DANFSe PDF (base64); query `emitenteCnpj` |
+
+Config: `Fiscal:NFSe:Habilitado`, `VersaoDps` (`Ve101`), `DiretorioSchemas` (`/app/schemas/nfse`).
+
 ### DANFE / PDF e HTML
 
 Contrato e opções: [docs/DANFE-ESTRATEGIA.md](docs/DANFE-ESTRATEGIA.md). **PDF** em Linux ainda retorna `NaoSuportado`; **HTML** funciona em qualquer SO (impressão / PDF pelo navegador).
@@ -411,7 +425,12 @@ curl -X POST http://localhost:5555/api/nfe/emitir \
     "DiasAlertaCertificado": 30,
     "SefazRetryHabilitado": true,
     "SefazRetryMaxTentativas": 3,
-    "SefazRetryIntervaloMs": 1000
+    "SefazRetryIntervaloMs": 1000,
+    "NFSe": {
+      "Habilitado": true,
+      "VersaoDps": "Ve101",
+      "DiretorioSchemas": "/app/schemas/nfse"
+    }
   },
   "Database": {
     "ConnectionString": "Host=...;Database=fiscal_db;Username=...;Password=..."

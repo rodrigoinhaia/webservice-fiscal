@@ -26,7 +26,9 @@ Copy-Item -Path (Join-Path $tmp "NFe.AppTeste\Schemas\*") -Destination "src\Fisc
 
 ## Versão do pacote NuGet
 
-Mantenha `Zeus.Net.NFe.NFCe`, `Zeus.Net.CTe` e `Zeus.Net.MDFe` na **mesma versão** fixada no `FiscalService.Api.csproj`. Após atualizar o pacote, sincronize os schemas e rode os testes.
+Mantenha `Zeus.Net.NFe.NFCe`, `Zeus.Net.CTe` e `Zeus.Net.MDFe` na **mesma versão** fixada no `FiscalService.Api.csproj` (atual: **`2026.8.18.2047`**). Após atualizar o pacote, sincronize os schemas e rode os testes.
+
+Última sincronização de XSD: branch `master` do [ZeusAutomacao/DFe.NET](https://github.com/ZeusAutomacao/DFe.NET) (`NFe.AppTeste/Schemas`).
 
 ## Docker
 
