@@ -1,3 +1,4 @@
+using FiscalService.Api.Config;
 using FiscalService.Api.Data;
 using FiscalService.Api.Models.Responses;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,12 @@ public sealed class EmissaoLogService
     public const int TamanhoPaginaDefault = 50;
 
     private readonly AppDbContext _db;
+    private readonly FiscalConfig _fiscalConfig;
 
-    public EmissaoLogService(AppDbContext db)
+    public EmissaoLogService(AppDbContext db, FiscalConfig fiscalConfig)
     {
         _db = db;
+        _fiscalConfig = fiscalConfig;
     }
 
     public async Task<PagedResponse<EmissaoLogResponse>> ListarAsync(
@@ -114,5 +117,82 @@ public sealed class EmissaoLogService
                 DataProcessamento = e.DataProcessamento
             })
             .FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// Obtém o XML autorizado pela chave de acesso: primeiro <c>XmlPath</c> do log mais recente,
+    /// depois busca em <see cref="FiscalConfig.DiretorioXmls"/> por nome contendo a chave.
+    /// </summary>
+    public async Task<EmissaoXmlResponse?> ObterXmlPorChaveAsync(string chaveAcesso, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(chaveAcesso)) return null;
+
+        var chave = chaveAcesso.Trim();
+
+        var xmlPath = await _db.EmissaoLogs
+            .AsNoTracking()
+            .Where(e => e.ChaveAcesso == chave)
+            .OrderByDescending(e => e.DataProcessamento)
+            .Select(e => e.XmlPath)
+            .FirstOrDefaultAsync(ct);
+
+        string? xml = null;
+
+        if (!string.IsNullOrWhiteSpace(xmlPath) && File.Exists(xmlPath))
+            xml = await File.ReadAllTextAsync(xmlPath, ct);
+        else
+            xml = await BuscarXmlNoDiretorioAsync(chave, ct);
+
+        if (string.IsNullOrWhiteSpace(xml))
+            return null;
+
+        return new EmissaoXmlResponse
+        {
+            Sucesso = true,
+            ChaveAcesso = chave,
+            ContentType = "application/xml",
+            Xml = xml
+        };
+    }
+
+    private async Task<string?> BuscarXmlNoDiretorioAsync(string chave, CancellationToken ct)
+    {
+        var dir = _fiscalConfig.DiretorioXmls;
+        if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+            return null;
+
+        var candidatos = new[]
+        {
+            Path.Combine(dir, $"{chave}-procNFe.xml"),
+            Path.Combine(dir, $"{chave}-nfe.xml"),
+            Path.Combine(dir, $"{chave}.xml"),
+        };
+
+        foreach (var path in candidatos)
+        {
+            if (File.Exists(path))
+                return await File.ReadAllTextAsync(path, ct);
+        }
+
+        string? encontrado = null;
+        try
+        {
+            encontrado = Directory.EnumerateFiles(dir, "*.xml", SearchOption.AllDirectories)
+                .FirstOrDefault(f => Path.GetFileName(f)
+                    .Contains(chave, StringComparison.OrdinalIgnoreCase));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return null;
+        }
+
+        if (encontrado is null)
+            return null;
+
+        return await File.ReadAllTextAsync(encontrado, ct);
     }
 }

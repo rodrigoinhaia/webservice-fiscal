@@ -58,4 +58,15 @@ public class EmissoesController : ControllerBase
         var item = await _service.ObterPorChaveAsync(chave, ct);
         return item is null ? NotFound() : Ok(item);
     }
+
+    /// <summary>
+    /// Obtém o XML autorizado da emissão pela chave de acesso
+    /// (via <c>XmlPath</c> do log ou busca em <c>Fiscal:DiretorioXmls</c>).
+    /// </summary>
+    [HttpGet("{chave}/xml")]
+    public async Task<ActionResult<EmissaoXmlResponse>> ObterXmlPorChave(string chave, CancellationToken ct)
+    {
+        var item = await _service.ObterXmlPorChaveAsync(chave, ct);
+        return item is null ? NotFound() : Ok(item);
+    }
 }

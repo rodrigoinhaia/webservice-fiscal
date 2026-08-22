@@ -25,13 +25,20 @@ public class MDFeService
     private readonly FiscalConfig _globalConfig;
     private readonly AppDbContext _db;
     private readonly NumeracaoService _numeracaoService;
+    private readonly EmitenteService _emitenteService;
     private readonly ILogger<MDFeService> _logger;
 
-    public MDFeService(FiscalConfig globalConfig, AppDbContext db, NumeracaoService numeracaoService, ILogger<MDFeService> logger)
+    public MDFeService(
+        FiscalConfig globalConfig,
+        AppDbContext db,
+        NumeracaoService numeracaoService,
+        EmitenteService emitenteService,
+        ILogger<MDFeService> logger)
     {
         _globalConfig = globalConfig;
         _db = db;
         _numeracaoService = numeracaoService;
+        _emitenteService = emitenteService;
         _logger = logger;
     }
 
@@ -113,8 +120,19 @@ public class MDFeService
         }
     }
 
-    public Task<FiscalResponse> CancelarAsync(MDFeCancelarRequest request, CancellationToken ct = default) =>
-        Task.FromResult(CancelarMdfeCore(request));
+    public async Task<FiscalResponse> CancelarAsync(MDFeCancelarRequest request, CancellationToken ct = default)
+    {
+        try
+        {
+            request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+            return CancelarMdfeCore(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao cancelar MDF-e: Chave={Chave}", request.ChaveAcesso);
+            return FiscalResponse.Falha(ClassificarExcecao(ex), ex.Message, ex.ToString());
+        }
+    }
 
     /// <summary>Consulta status do serviço SEFAZ MDF-e (modelo 58).</summary>
     public StatusServicoResponse ConsultarStatusSefaz(ConfiguracaoEmitenteRequest emitente)
@@ -154,7 +172,7 @@ public class MDFeService
     {
         try
         {
-            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
+            var config = ConstruirConfiguracao(request.ConfiguracaoEmitente!);
 
             var mdfe = new MDFe.Classes.Informacoes.MDFe();
             mdfe.InfMDFe.Id = $"MDFe{request.ChaveAcesso}";
@@ -321,6 +339,9 @@ public class MDFeService
 
     private static string ClassificarExcecao(Exception ex)
     {
+        if (ex is KeyNotFoundException) return "EmitenteNaoEncontrado";
+        if (ex is ArgumentException) return "Validacao";
+
         var msg = ex.Message.ToLowerInvariant();
         if (msg.Contains("certificado") || msg.Contains("pfx") || msg.Contains("senha")) return "CertificadoInvalido";
         if (msg.Contains("timeout") || msg.Contains("unavailable") || msg.Contains("connection")) return "ServicoIndisponivel";

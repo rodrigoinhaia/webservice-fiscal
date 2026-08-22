@@ -17,10 +17,12 @@ public class NumeracaoConfirmarRequest
     public int Numero { get; set; }
 }
 
-public class StatusServicoRequest
+public class StatusServicoRequest : IEmitenteConfigSource
 {
-    [Required]
-    public ConfiguracaoEmitenteRequest ConfiguracaoEmitente { get; set; } = null!;
+    /// <summary>CNPJ do emitente cadastrado em <c>/api/emitentes</c> (alternativa a <see cref="ConfiguracaoEmitente"/>).</summary>
+    public string? EmitenteCnpj { get; set; }
+
+    public ConfiguracaoEmitenteRequest? ConfiguracaoEmitente { get; set; }
 
     /// <summary>Modelo: "NFe", "NFCe", "CTe", "MDFe".</summary>
     public string Modelo { get; set; } = "NFe";

@@ -66,10 +66,10 @@ public class MDFeEncerrarRequest
     public DateTime DataEncerramento { get; set; } = DateTime.UtcNow;
 }
 
-public class MDFeCancelarRequest
+public class MDFeCancelarRequest : IEmitenteConfigSource
 {
-    [Required]
-    public ConfiguracaoEmitenteRequest ConfiguracaoEmitente { get; set; } = null!;
+    public string? EmitenteCnpj { get; set; }
+    public ConfiguracaoEmitenteRequest? ConfiguracaoEmitente { get; set; }
 
     [Required]
     [StringLength(44, MinimumLength = 44)]

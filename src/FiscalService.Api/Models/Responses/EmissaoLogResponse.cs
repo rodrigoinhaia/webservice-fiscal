@@ -18,6 +18,15 @@ public class EmissaoLogResponse
     public DateTime DataProcessamento { get; set; }
 }
 
+/// <summary>Conteúdo XML autorizado de uma emissão (por chave de acesso).</summary>
+public class EmissaoXmlResponse
+{
+    public bool Sucesso { get; set; }
+    public string ChaveAcesso { get; set; } = string.Empty;
+    public string ContentType { get; set; } = "application/xml";
+    public string Xml { get; set; } = string.Empty;
+}
+
 /// <summary>Resposta paginada genérica para listagem.</summary>
 public class PagedResponse<T>
 {

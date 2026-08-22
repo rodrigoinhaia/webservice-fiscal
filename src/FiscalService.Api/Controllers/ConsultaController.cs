@@ -14,6 +14,7 @@ public class ConsultaController : ControllerBase
     private readonly NFCeService _nfceService;
     private readonly CTeService _cteService;
     private readonly MDFeService _mdfeService;
+    private readonly EmitenteService _emitenteService;
     private readonly ILogger<ConsultaController> _logger;
 
     public ConsultaController(
@@ -21,31 +22,48 @@ public class ConsultaController : ControllerBase
         NFCeService nfceService,
         CTeService cteService,
         MDFeService mdfeService,
+        EmitenteService emitenteService,
         ILogger<ConsultaController> logger)
     {
         _nfeService = nfeService;
         _nfceService = nfceService;
         _cteService = cteService;
         _mdfeService = mdfeService;
+        _emitenteService = emitenteService;
         _logger = logger;
     }
 
     /// <summary>
     /// Consulta o status do serviço SEFAZ para o modelo informado
     /// (<c>NFe</c>, <c>NFCe</c>, <c>CTe</c> ou <c>MDFe</c>; default <c>NFe</c>).
+    /// Aceita <c>emitenteCnpj</c> (cadastro) ou <c>configuracaoEmitente</c> completo.
     /// </summary>
     [HttpPost("status-servico")]
-    public IActionResult StatusServico([FromBody] StatusServicoRequest request)
+    public async Task<IActionResult> StatusServico([FromBody] StatusServicoRequest request, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        ConfiguracaoEmitenteRequest config;
+        try
+        {
+            config = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { sucesso = false, erro = new { tipo = "Validacao", mensagem = ex.Message } });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { sucesso = false, erro = new { tipo = "EmitenteNaoEncontrado", mensagem = ex.Message } });
+        }
 
         var modelo = (request.Modelo ?? "NFe").Trim();
         var resultado = modelo.ToUpperInvariant() switch
         {
-            "NFCE" or "65" => _nfceService.ConsultarStatusSefaz(request.ConfiguracaoEmitente),
-            "CTE" or "57" => _cteService.ConsultarStatusSefaz(request.ConfiguracaoEmitente),
-            "MDFE" or "58" => _mdfeService.ConsultarStatusSefaz(request.ConfiguracaoEmitente),
-            "NFE" or "55" => _nfeService.ConsultarStatusSefaz(request.ConfiguracaoEmitente),
+            "NFCE" or "65" => _nfceService.ConsultarStatusSefaz(config),
+            "CTE" or "57" => _cteService.ConsultarStatusSefaz(config),
+            "MDFE" or "58" => _mdfeService.ConsultarStatusSefaz(config),
+            "NFE" or "55" => _nfeService.ConsultarStatusSefaz(config),
             _ => new StatusServicoResponse
             {
                 Sucesso = false,

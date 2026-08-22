@@ -1,3 +1,4 @@
+using FiscalService.Api.Config;
 using FiscalService.Api.Data;
 using FiscalService.Api.Data.Entities;
 using FiscalService.Api.Services;
@@ -63,7 +64,7 @@ public sealed class EmissaoLogServiceIntegrationTests : IClassFixture<PostgresFi
         });
         await ctx.SaveChangesAsync();
 
-        var svc = new EmissaoLogService(ctx);
+        var svc = new EmissaoLogService(ctx, new FiscalConfig { DiretorioXmls = Path.GetTempPath() });
 
         var pagina1 = await svc.ListarAsync(cnpj, "55", null, null, null, null, null, null, 1, 3);
         Assert.Equal(5, pagina1.Total);
@@ -111,7 +112,7 @@ public sealed class EmissaoLogServiceIntegrationTests : IClassFixture<PostgresFi
         });
         await ctx.SaveChangesAsync();
 
-        var svc = new EmissaoLogService(ctx);
+        var svc = new EmissaoLogService(ctx, new FiscalConfig { DiretorioXmls = Path.GetTempPath() });
         var item = await svc.ObterPorChaveAsync(chave);
 
         Assert.NotNull(item);
