@@ -61,6 +61,9 @@ public class NFSeServicoRequest
 
     /// <summary>Código IBGE do município de prestação (fallback: emitente.endereco.codigoMunicipio).</summary>
     public string? CodigoMunicipioPrestacao { get; set; }
+
+    /// <summary>Código NBS (9 dígitos). Obrigatório no layout 1.01 para vários cTribNac.</summary>
+    public string? CodNbs { get; set; }
 }
 
 public class NFSeValoresRequest
@@ -80,6 +83,18 @@ public class NFSeValoresRequest
 
 public class NFSeReformaTributariaRequest
 {
+    /// <summary>Código indicador da operação (cIndOp, 6 dígitos). Default: 030101.</summary>
+    public string? CodigoIndicadorOperacao { get; set; }
+
+    /// <summary>Indicador de uso/consumo pessoal (indFinal). Default: false.</summary>
+    public bool? IndicadorUsoFinal { get; set; }
+
+    /// <summary>CST IBS/CBS (3 dígitos). Default: 000.</summary>
+    public string? CodigoSituacaoTributaria { get; set; }
+
+    /// <summary>Classificação tributária IBS/CBS (6 dígitos). Default: 000001.</summary>
+    public string? CodigoClassificacaoTributaria { get; set; }
+
     public decimal? ValorIbs { get; set; }
     public decimal? ValorCbs { get; set; }
 }

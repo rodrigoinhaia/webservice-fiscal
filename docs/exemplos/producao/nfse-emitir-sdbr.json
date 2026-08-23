@@ -22,8 +22,15 @@
   },
   "servico": {
     "codTributacaoNacional": "140201",
-    "descricao": "Teste de emissao do webservice fiscal — assistencia tecnica (cancelamento imediato).",
+    "codNbs": "120012000",
+    "descricao": "Teste de emissao do webservice fiscal - assistencia tecnica (cancelamento imediato).",
     "codigoMunicipioPrestacao": "4311403"
+  },
+  "reformaTributaria": {
+    "codigoIndicadorOperacao": "030101",
+    "indicadorUsoFinal": false,
+    "codigoSituacaoTributaria": "000",
+    "codigoClassificacaoTributaria": "000001"
   },
   "valores": {
     "valorServico": 1.0,

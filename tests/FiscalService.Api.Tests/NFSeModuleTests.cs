@@ -137,7 +137,7 @@ public class NFSeDpsMapperTests
             },
             Servico = new NFSeServicoRequest
             {
-                CodTributacaoNacional = "010101",
+                CodTributacaoNacional = "140201",
                 Descricao = "Desenvolvimento"
             },
             Valores = new NFSeValoresRequest { ValorServico = 1500m }
@@ -157,7 +157,12 @@ public class NFSeDpsMapperTests
         Assert.Equal("12345678000190", dps.Informacoes.Prestador.CNPJ);
         Assert.Equal("98765432000100", dps.Informacoes.Tomador.CNPJ);
         Assert.Equal(OptanteSimplesNacional.OptanteMEEPP, dps.Informacoes.Prestador.Regime.OptanteSimplesNacional);
+        Assert.Equal(RegimeApuracao.TributosFederaisMunicipalSN, dps.Informacoes.Prestador.Regime.RegimeApuracao);
+        Assert.Equal("120012000", dps.Informacoes.Servico.Informacoes.CodNBS);
+        Assert.NotNull(dps.Informacoes.IBSCBS);
+        Assert.Equal(RTCFinNFSe.Regular, dps.Informacoes.IBSCBS.FinalidadeNFSe);
         Assert.Equal(1500m, dps.Informacoes.Valores.ValoresServico.Valor);
+        Assert.Equal(0, dps.Informacoes.Valores.Tributos.Total!.IndicadorTotal);
     }
 
     [Fact]

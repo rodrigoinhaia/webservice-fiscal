@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using FiscalService.Api.Models.Requests;
 using OpenAC.Net.DFe.Core.Common;
 using OpenAC.Net.NFSe.Nacional.Common.Model;
@@ -9,6 +11,9 @@ namespace FiscalService.Api.Services.NFSe;
 public static class NFSeDpsMapper
 {
     public const string ModeloNumeracao = "NS";
+
+    private static readonly TimeZoneInfo FusoBrasil = TimeZoneInfo.FindSystemTimeZoneById(
+        OperatingSystem.IsWindows() ? "E. South America Standard Time" : "America/Sao_Paulo");
 
     public static Dps MontarDps(
         NFSeEmitirRequest request,
@@ -29,13 +34,16 @@ public static class NFSeDpsMapper
                              ?? ctx.Email
                              ?? throw new ArgumentException("E-mail do prestador é obrigatório (cadastro ou request.prestador.email).");
 
+        var optanteSn = emitente.Crt is 1 or 2;
+        var codNbs = ResolverCodNbs(request);
+
         var dps = new Dps
         {
             Versao = versao,
             Informacoes = new InfDps
             {
                 TipoAmbiente = ambiente,
-                DhEmissao = DateTime.Now,
+                DhEmissao = ObterDataHoraBrasil(),
                 LocalidadeEmitente = SomenteDigitos(codMunEmitente),
                 Serie = request.Serie,
                 NumeroDps = numeroDps.ToString(),
@@ -48,9 +56,12 @@ public static class NFSeDpsMapper
                     InscricaoMunicipal = request.Prestador?.InscricaoMunicipal ?? ctx.InscricaoMunicipal,
                     Regime = new RegimeTributario
                     {
-                        OptanteSimplesNacional = emitente.Crt is 1 or 2
+                        OptanteSimplesNacional = optanteSn
                             ? OptanteSimplesNacional.OptanteMEEPP
                             : OptanteSimplesNacional.NaoOptante,
+                        RegimeApuracao = optanteSn
+                            ? RegimeApuracao.TributosFederaisMunicipalSN
+                            : default,
                         RegimeEspecial = RegimeEspecial.Nenhum
                     }
                 },
@@ -65,7 +76,8 @@ public static class NFSeDpsMapper
                     {
                         CodTributacaoNacional = request.Servico.CodTributacaoNacional,
                         CodTributacaoMunicipio = request.Servico.CodTributacaoMunicipio,
-                        Descricao = request.Servico.Descricao
+                        CodNBS = codNbs,
+                        Descricao = SanitizarDescricao(request.Servico.Descricao)
                     }
                 },
                 Valores = new ValoresDps
@@ -81,9 +93,14 @@ public static class NFSeDpsMapper
                             ISSQN = ResolverIssqn(request.Valores.Issqn),
                             TipoRetencaoISSQN = ResolverRetencaoIss(request.Valores.TipoRetencaoIssqn),
                             Aliquota = request.Valores.AliquotaIss
+                        },
+                        Total = new TotalTributos
+                        {
+                            IndicadorTotal = 0
                         }
                     }
-                }
+                },
+                IBSCBS = MontarIbscbs(request, versao)
             }
         };
 
@@ -102,16 +119,90 @@ public static class NFSeDpsMapper
             Informacoes = new InfPedReg
             {
                 TipoAmbiente = ambiente,
-                DhEvento = DateTimeOffset.Now,
+                DhEvento = ObterDataHoraBrasil(),
                 ChNFSe = request.ChaveAcesso,
                 CNPJAutor = emitente.Cnpj,
                 Evento = new EventoCancelamento
                 {
                     CodMotivo = ResolverMotivoCancelamento(request.CodigoMotivo),
-                    Descricao = request.DescricaoMotivo
+                    Descricao = SanitizarDescricao(request.DescricaoMotivo)
                 }
             }
         };
+    }
+
+    private static RTCInfoIBSCBS? MontarIbscbs(NFSeEmitirRequest request, VersaoNFSe versao)
+    {
+        if (versao != VersaoNFSe.Ve101)
+            return null;
+
+        var rtc = request.ReformaTributaria;
+        var indFinal = rtc?.IndicadorUsoFinal ?? false;
+
+        return new RTCInfoIBSCBS
+        {
+            FinalidadeNFSe = RTCFinNFSe.Regular,
+            IndicadorUsoFinal = indFinal ? RTCIndFinal.Sim : RTCIndFinal.Nao,
+            CodigoIndicadorOperacao = rtc?.CodigoIndicadorOperacao ?? "030101",
+            IndicadorDestinatario = RTCIndDest.ProprioTomador,
+            Valores = new RTCInfoValoresIBSCBS
+            {
+                Tributos = new RTCInfoTributosIBSCBS
+                {
+                    GrupoIBSCBS = new RTCInfoTributosSitClas
+                    {
+                        CodigoSituacaoTributaria = rtc?.CodigoSituacaoTributaria ?? "000",
+                        CodigoClassificacaoTributaria = rtc?.CodigoClassificacaoTributaria ?? "000001"
+                    }
+                }
+            }
+        };
+    }
+
+    private static string? ResolverCodNbs(NFSeEmitirRequest request)
+    {
+        var informado = SomenteDigitos(request.Servico.CodNbs);
+        if (informado.Length == 9)
+            return informado;
+
+        return request.Servico.CodTributacaoNacional switch
+        {
+            "140201" => "120012000",
+            _ => string.IsNullOrEmpty(informado) ? null : informado
+        };
+    }
+
+    private static DateTimeOffset ObterDataHoraBrasil()
+    {
+        var agoraUtc = DateTime.UtcNow;
+        var offset = FusoBrasil.GetUtcOffset(agoraUtc);
+        var local = TimeZoneInfo.ConvertTimeFromUtc(agoraUtc, FusoBrasil);
+        return new DateTimeOffset(local, offset);
+    }
+
+    private static string SanitizarDescricao(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+            return string.Empty;
+
+        var normalizado = texto.Normalize(NormalizationForm.FormKD);
+        var sb = new StringBuilder(normalizado.Length);
+        foreach (var c in normalizado)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark)
+                continue;
+
+            sb.Append(c switch
+            {
+                '—' or '–' or '−' => '-',
+                '“' or '”' => '"',
+                '‘' or '’' => '\'',
+                '…' => '.',
+                _ => c
+            });
+        }
+
+        return sb.ToString().Trim();
     }
 
     private static InfoPessoaNFSe MapearTomador(NFSeTomadorRequest tomador)
