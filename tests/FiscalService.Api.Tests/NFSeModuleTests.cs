@@ -242,6 +242,16 @@ public class NFSeOpenAcFactoryTests
 public class NFSeDpsXmlNormalizerTests
 {
     [Fact]
+    public void RemoverXmlnsVazioInfAssinado_remove_apenas_no_infDPS()
+    {
+        const string xml = """<infDPS Id="DPS1" xmlns=""><nDPS>1</nDPS></infDPS>""";
+
+        var normalizado = NFSeDpsXmlNormalizer.RemoverXmlnsVazioInfAssinado(xml);
+
+        Assert.Equal("""<infDPS Id="DPS1"><nDPS>1</nDPS></infDPS>""", normalizado);
+    }
+
+    [Fact]
     public void AjustarXmlAposAssinatura_remove_assinatura_vazia_e_forca_utf8()
     {
         const string xml = """
@@ -266,7 +276,6 @@ public class NFSeDpsXmlNormalizerTests
 
         Assert.StartsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>", normalizado, StringComparison.Ordinal);
         Assert.DoesNotContain("encoding=\"utf-16\"", normalizado, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("xmlns=\"\"", normalizado, StringComparison.Ordinal);
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(normalizado, @"<Signature[\s>]").Count);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(normalizado, @"<Signature[\s>]"));
     }
 }
