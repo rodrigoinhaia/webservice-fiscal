@@ -19,8 +19,18 @@ public sealed class FiscalConfig
     /// <summary>Diretório dos certificados .pfx.</summary>
     public string DiretorioCertificados { get; set; } = "/app/certificados";
 
-    /// <summary>Timeout em segundos para chamadas ao WebService da SEFAZ.</summary>
+    /// <summary>
+    /// Timeout em segundos para chamadas ao WebService da SEFAZ (config/env).
+    /// O Zeus/DFe.NET usa milissegundos — use <see cref="TimeoutWsMilliseconds"/>.
+    /// </summary>
     public int TimeoutWs { get; set; } = 30;
+
+    /// <summary>
+    /// Timeout em milissegundos para <c>ConfiguracaoServico.TimeOut</c> (DFe.NET).
+    /// Valores ≥ 1000 em <see cref="TimeoutWs"/> são tratados como já estarem em ms (compat).
+    /// </summary>
+    public int TimeoutWsMilliseconds =>
+        TimeoutWs <= 0 ? 30_000 : TimeoutWs >= 1000 ? TimeoutWs : TimeoutWs * 1000;
 
     /// <summary>Dias antes do vencimento para o /health reportar status degradado.</summary>
     public int DiasAlertaCertificado { get; set; } = 30;

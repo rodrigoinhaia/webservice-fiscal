@@ -186,7 +186,7 @@ public class NFeDfeService
             DiretorioSchemas = _globalConfig.DiretorioSchemas,
             SalvarXmlServicos = _globalConfig.SalvarXmls,
             DiretorioSalvarXml = _globalConfig.DiretorioXmls,
-            TimeOut = _globalConfig.TimeoutWs,
+            TimeOut = _globalConfig.TimeoutWsMilliseconds,
             UnZip = descompactar
         };
 
