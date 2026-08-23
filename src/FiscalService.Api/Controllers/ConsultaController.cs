@@ -56,6 +56,19 @@ public class ConsultaController : ControllerBase
         {
             return NotFound(new { sucesso = false, erro = new { tipo = "EmitenteNaoEncontrado", mensagem = ex.Message } });
         }
+        catch (InvalidOperationException ex)
+        {
+            return UnprocessableEntity(new
+            {
+                sucesso = false,
+                erro = new
+                {
+                    tipo = "DataProtectionKeyRing",
+                    mensagem = ex.Message,
+                    timestamp = DateTime.UtcNow
+                }
+            });
+        }
 
         var modelo = (request.Modelo ?? "NFe").Trim();
         var resultado = modelo.ToUpperInvariant() switch
