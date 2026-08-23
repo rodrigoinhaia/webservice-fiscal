@@ -238,3 +238,35 @@ public class NFSeOpenAcFactoryTests
         Assert.EndsWith(Path.Combine("1.01"), open.Configuracoes.Arquivos.PathSchemas, StringComparison.OrdinalIgnoreCase);
     }
 }
+
+public class NFSeDpsXmlNormalizerTests
+{
+    [Fact]
+    public void NormalizarXml_remove_assinatura_vazia_e_forca_utf8()
+    {
+        const string xml = """
+            <?xml version="1.0" encoding="utf-16"?>
+            <DPS versao="1.01" xmlns="http://www.sped.fazenda.gov.br/nfse">
+              <infDPS Id="DPS1" xmlns="">
+                <nDPS>1</nDPS>
+              </infDPS>
+              <Signature xmlns="http://www.w3.org/2000/09/xmldsig#"></Signature>
+              <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+                <SignedInfo>
+                  <Reference URI="#DPS1">
+                    <DigestValue>abc=</DigestValue>
+                  </Reference>
+                </SignedInfo>
+                <SignatureValue>def=</SignatureValue>
+              </Signature>
+            </DPS>
+            """;
+
+        var normalizado = NFSeDpsXmlNormalizer.NormalizarXml(xml);
+
+        Assert.StartsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>", normalizado, StringComparison.Ordinal);
+        Assert.DoesNotContain("encoding=\"utf-16\"", normalizado, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("xmlns=\"\"", normalizado, StringComparison.Ordinal);
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(normalizado, @"<Signature[\s>]").Count);
+    }
+}
