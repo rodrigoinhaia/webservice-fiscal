@@ -94,10 +94,9 @@ public static class NFSeDpsMapper
                             TipoRetencaoISSQN = ResolverRetencaoIss(request.Valores.TipoRetencaoIssqn),
                             Aliquota = request.Valores.AliquotaIss
                         },
-                        Total = new TotalTributos
-                        {
-                            IndicadorTotal = 0
-                        }
+                        Total = optanteSn
+                            ? null
+                            : new TotalTributos { IndicadorTotal = 0 }
                     }
                 },
                 IBSCBS = MontarIbscbs(request, versao)

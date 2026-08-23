@@ -162,6 +162,59 @@ public class NFSeDpsMapperTests
         Assert.NotNull(dps.Informacoes.IBSCBS);
         Assert.Equal(RTCFinNFSe.Regular, dps.Informacoes.IBSCBS.FinalidadeNFSe);
         Assert.Equal(1500m, dps.Informacoes.Valores.ValoresServico.Valor);
+        Assert.Null(dps.Informacoes.Valores.Tributos.Total);
+    }
+
+    [Fact]
+    public void MontarDps_nao_optante_sn_informa_indTotTrib()
+    {
+        var emitente = new ConfiguracaoEmitenteRequest
+        {
+            Cnpj = "12345678000190",
+            RazaoSocial = "Prestador",
+            Crt = 3,
+            Uf = "RS",
+            Ambiente = "Homologacao",
+            CertificadoPath = "c.pfx",
+            CertificadoSenha = "s",
+            Endereco = new EnderecoRequest { CodigoMunicipio = "4314902" }
+        };
+
+        var request = new NFSeEmitirRequest
+        {
+            Serie = "1",
+            Competencia = new DateTime(2026, 8, 1),
+            Prestador = new NFSePrestadorRequest { Email = "prestador@empresa.com" },
+            Tomador = new NFSeTomadorRequest
+            {
+                Cnpj = "98765432000100",
+                Nome = "Tomador",
+                Endereco = new EnderecoRequest
+                {
+                    Logradouro = "Rua B",
+                    Numero = "10",
+                    Bairro = "Centro",
+                    CodigoMunicipio = "4314902",
+                    Cep = "90000000"
+                }
+            },
+            Servico = new NFSeServicoRequest
+            {
+                CodTributacaoNacional = "140201",
+                Descricao = "Desenvolvimento"
+            },
+            Valores = new NFSeValoresRequest { ValorServico = 1500m }
+        };
+
+        var dps = NFSeDpsMapper.MontarDps(
+            request,
+            emitente,
+            new EmitenteNfseContexto { CodigoMunicipioIbge = "4314902" },
+            1,
+            VersaoNFSe.Ve101,
+            DFeTipoAmbiente.Homologacao);
+
+        Assert.Equal(OptanteSimplesNacional.NaoOptante, dps.Informacoes.Prestador.Regime.OptanteSimplesNacional);
         Assert.Equal(0, dps.Informacoes.Valores.Tributos.Total!.IndicadorTotal);
     }
 
