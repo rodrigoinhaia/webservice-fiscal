@@ -242,7 +242,7 @@ public class NFSeOpenAcFactoryTests
 public class NFSeDpsXmlNormalizerTests
 {
     [Fact]
-    public void NormalizarXml_remove_assinatura_vazia_e_forca_utf8()
+    public void AjustarXmlAposAssinatura_remove_assinatura_vazia_e_forca_utf8()
     {
         const string xml = """
             <?xml version="1.0" encoding="utf-16"?>
@@ -262,11 +262,11 @@ public class NFSeDpsXmlNormalizerTests
             </DPS>
             """;
 
-        var normalizado = NFSeDpsXmlNormalizer.NormalizarXml(xml);
+        var normalizado = NFSeDpsXmlNormalizer.AjustarXmlAposAssinatura(xml);
 
         Assert.StartsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>", normalizado, StringComparison.Ordinal);
         Assert.DoesNotContain("encoding=\"utf-16\"", normalizado, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("xmlns=\"\"", normalizado, StringComparison.Ordinal);
+        Assert.Contains("xmlns=\"\"", normalizado, StringComparison.Ordinal);
         Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(normalizado, @"<Signature[\s>]").Count);
     }
 }

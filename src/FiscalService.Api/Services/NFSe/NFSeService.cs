@@ -61,6 +61,7 @@ public sealed class NFSeService
             var dps = NFSeDpsMapper.MontarDps(request, request.ConfiguracaoEmitente, ctx, numero, versao, ambiente);
             var openAc = _openAcFactory.Criar(request.ConfiguracaoEmitente, ctx);
 
+            NFSeDpsXmlNormalizer.PrepararDpsAntesAssinatura(dps);
             dps.Assinar(openAc.Configuracoes);
             NFSeDpsXmlNormalizer.NormalizarDpsAposAssinatura(dps);
 
@@ -140,6 +141,7 @@ public sealed class NFSeService
                 request, request.ConfiguracaoEmitente, versao, ambiente);
 
             var openAc = _openAcFactory.Criar(request.ConfiguracaoEmitente, ctx);
+            NFSeDpsXmlNormalizer.PrepararEventoAntesAssinatura(evento);
             evento.Assinar(openAc.Configuracoes);
             NFSeDpsXmlNormalizer.NormalizarEventoAposAssinatura(evento);
 

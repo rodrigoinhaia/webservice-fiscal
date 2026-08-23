@@ -1,32 +1,33 @@
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Linq;
 using OpenAC.Net.DFe.Core.Document;
 using OpenAC.Net.NFSe.Nacional.Common.Model;
 
 namespace FiscalService.Api.Services.NFSe;
 
 /// <summary>
-/// Corrige artefatos do OpenAC na serialização/assinatura da DPS (assinatura vazia duplicada, xmlns="" em infDPS, encoding UTF-16).
+/// Corrige artefatos do OpenAC na DPS sem invalidar a assinatura XMLDSig.
+/// Alterações estruturais só antes de assinar; após assinar, apenas ajustes em string fora do infDPS assinado.
 /// </summary>
 internal static class NFSeDpsXmlNormalizer
 {
-    private static readonly XNamespace DsigNs = "http://www.w3.org/2000/09/xmldsig#";
-    private static readonly Regex XmlDeclarationEncoding = new(
-        @"<\?xml version=""1\.0"" encoding=""[^""]+""(\s+standalone=""[^""]+"")?\?>",
+    private static readonly Regex EmptySignatureElement = new(
+        @"<Signature\b[^>]*>\s*</Signature>",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
-    private static readonly Regex EmptyXmlnsAttribute = new(
-        @"\s+xmlns=""""",
-        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex Utf16Declaration = new(
+        @"encoding=""utf-16""",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    public static void PrepararDpsAntesAssinatura(Dps dps) => LimparAssinaturaVazia(dps);
+
+    public static void PrepararEventoAntesAssinatura(PedidoRegistroEvento evento) => LimparAssinaturaVazia(evento);
 
     public static void NormalizarDpsAposAssinatura(Dps dps)
     {
         if (string.IsNullOrWhiteSpace(dps.Xml))
             return;
 
-        DefinirXml(dps, NormalizarXml(dps.Xml));
+        DefinirXml(dps, AjustarXmlAposAssinatura(dps.Xml));
     }
 
     public static void NormalizarEventoAposAssinatura(PedidoRegistroEvento evento)
@@ -34,97 +35,27 @@ internal static class NFSeDpsXmlNormalizer
         if (string.IsNullOrWhiteSpace(evento.Xml))
             return;
 
-        DefinirXml(evento, NormalizarXml(evento.Xml));
+        DefinirXml(evento, AjustarXmlAposAssinatura(evento.Xml));
     }
 
-    internal static string NormalizarXml(string xml)
+    internal static string AjustarXmlAposAssinatura(string xml)
     {
-        var doc = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
-        var root = doc.Root ?? throw new InvalidOperationException("XML sem elemento raiz.");
-        var nfseNs = root.Name.Namespace;
-
-        foreach (var infDps in root.Descendants().Where(e => e.Name.LocalName == "infDPS").ToList())
-        {
-            CorrigirNamespaceInfDps(infDps, nfseNs);
-            CorrigirNamespacesDescendentes(infDps, nfseNs);
-        }
-
-        foreach (var sig in root.Descendants(DsigNs + "Signature").ToList())
-        {
-            if (AssinaturaInvalida(sig))
-                sig.Remove();
-        }
-
-        return SerializarUtf8(doc);
+        var ajustado = EmptySignatureElement.Replace(xml, string.Empty);
+        return Utf16Declaration.Replace(ajustado, "encoding=\"UTF-8\"");
     }
 
-    private static void CorrigirNamespaceInfDps(XElement infDps, XNamespace nfseNs)
+    private static void LimparAssinaturaVazia<TDocument>(DFeSignDocument<TDocument> documento)
+        where TDocument : class
     {
-        if (!string.IsNullOrEmpty(infDps.Name.NamespaceName))
+        var prop = typeof(DFeSignDocument<TDocument>).GetProperty(
+            nameof(DFeSignDocument<TDocument>.Signature),
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        if (prop?.GetValue(documento) is not DFeSignature signature)
             return;
 
-        var attrs = infDps.Attributes()
-            .Where(a => !a.IsNamespaceDeclaration)
-            .Select(a => string.IsNullOrEmpty(a.Name.NamespaceName)
-                ? new XAttribute(a.Name.LocalName, a.Value)
-                : new XAttribute(a.Name, a.Value));
-
-        infDps.ReplaceWith(new XElement(nfseNs + "infDPS", attrs, infDps.Nodes()));
-    }
-
-    private static void CorrigirNamespacesDescendentes(XElement pai, XNamespace nfseNs)
-    {
-        foreach (var child in pai.Elements().ToList())
-        {
-            if (child.Name.Namespace == DsigNs)
-                continue;
-
-            if (string.IsNullOrEmpty(child.Name.NamespaceName))
-            {
-                var attrs = child.Attributes()
-                    .Where(a => !a.IsNamespaceDeclaration)
-                    .Select(a => string.IsNullOrEmpty(a.Name.NamespaceName)
-                        ? new XAttribute(a.Name.LocalName, a.Value)
-                        : new XAttribute(a.Name, a.Value));
-                var novo = new XElement(nfseNs + child.Name.LocalName, attrs, child.Nodes());
-                child.ReplaceWith(novo);
-                CorrigirNamespacesDescendentes(novo, nfseNs);
-            }
-            else
-            {
-                CorrigirNamespacesDescendentes(child, nfseNs);
-            }
-        }
-    }
-
-    private static string SerializarUtf8(XDocument doc)
-    {
-        var settings = new XmlWriterSettings
-        {
-            Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-            OmitXmlDeclaration = false,
-            Indent = false,
-            NewLineHandling = NewLineHandling.None
-        };
-
-        using var ms = new MemoryStream();
-        using (var writer = XmlWriter.Create(ms, settings))
-            doc.Save(writer);
-
-        var result = Encoding.UTF8.GetString(ms.ToArray());
-        result = XmlDeclarationEncoding.Replace(
-            result,
-            match => match.Groups[1].Success
-                ? $"<?xml version=\"1.0\" encoding=\"UTF-8\"{match.Groups[1].Value}?>"
-                : "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        return EmptyXmlnsAttribute.Replace(result, string.Empty);
-    }
-
-    private static bool AssinaturaInvalida(XElement sig)
-    {
-        var sigValue = sig.Element(DsigNs + "SignatureValue")?.Value;
-        var digest = sig.Descendants(DsigNs + "DigestValue").FirstOrDefault()?.Value;
-        return string.IsNullOrWhiteSpace(sigValue) || string.IsNullOrWhiteSpace(digest);
+        if (string.IsNullOrWhiteSpace(signature.SignatureValue))
+            prop.SetValue(documento, null);
     }
 
     private static void DefinirXml<TDocument>(DFeDocument<TDocument> documento, string xml)
