@@ -107,6 +107,44 @@ public class NumeracaoService
         return ultimo + 1;
     }
 
+    /// <summary>Lista contadores cadastrados (último e próximo) com filtros opcionais.</summary>
+    public async Task<List<NumeracaoSequencial>> ListarAsync(
+        string? cnpj = null,
+        string? ambiente = null,
+        CancellationToken ct = default)
+    {
+        var query = _db.NumeracoesSequenciais.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(cnpj))
+        {
+            var digits = new string(cnpj.Where(char.IsDigit).ToArray());
+            query = query.Where(n => n.Cnpj == digits);
+        }
+
+        if (!string.IsNullOrWhiteSpace(ambiente))
+        {
+            var amb = NormalizarAmbiente(ambiente);
+            query = query.Where(n => n.Ambiente == amb);
+        }
+
+        return await query
+            .OrderBy(n => n.Cnpj)
+            .ThenBy(n => n.Ambiente)
+            .ThenBy(n => n.Modelo)
+            .ThenBy(n => n.Serie)
+            .ToListAsync(ct);
+    }
+
+    public static string DescreverModelo(string modelo) => modelo switch
+    {
+        "55" => "NF-e",
+        "65" => "NFC-e",
+        "57" => "CT-e",
+        "58" => "MDF-e",
+        "NS" => "NFS-e",
+        _ => modelo
+    };
+
     /// <summary>Força o contador para um número específico (usado após inutilização ou correção manual).</summary>
     public async Task ConfirmarNumeroAsync(
         string cnpj,
