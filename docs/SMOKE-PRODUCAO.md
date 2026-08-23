@@ -112,6 +112,7 @@ Todos os payloads incluem observação de teste e são cancelados logo após aut
 | Rejeição SEFAZ (numeração) | Conferir `GET /api/numeracao` e ajustar com `POST /api/numeracao/confirmar` |
 | NFC-e sem CSC | Cadastrar `cscProducao` no emitente ou passar `-IdCsc` / `-Csc` |
 | NFS-e rejeitada | Conferir `codTributacaoNacional`, IM do prestador e módulo `FISCAL_NFSe_Habilitado=true` |
+| `The requested security protocol is not supported` | OpenAC default usa TLS 1.0/1.1 (incompatível com .NET 8). Corrigido em `NFSeOpenAcFactory` — exige deploy da API |
 
 ## Homologação vs produção
 

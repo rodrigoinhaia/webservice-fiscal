@@ -2,6 +2,9 @@
   "emitenteCnpj": "00000000000000",
   "serie": "1",
   "competencia": "2026-08-23",
+  "prestador": {
+    "email": "vendas@sd.inf.br"
+  },
   "tomador": {
     "cnpj": "53658565000127",
     "nome": "SDBR SOLUCOES DIGITAIS LTDA",

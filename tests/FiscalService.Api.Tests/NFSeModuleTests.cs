@@ -6,6 +6,7 @@ using FiscalService.Api.Validation;
 using FluentValidation.TestHelper;
 using OpenAC.Net.DFe.Core.Common;
 using OpenAC.Net.NFSe.Nacional.Common.Types;
+using System.Net;
 using Xunit;
 
 namespace FiscalService.Api.Tests;
@@ -196,6 +197,16 @@ public class NFSeOpenAcFactoryTests
     }
 
     [Fact]
+    public void ResolverProtocolosTls_exclui_tls10_e_tls11()
+    {
+        var protocolos = NFSeOpenAcFactory.ResolverProtocolosTls();
+        Assert.True(protocolos.HasFlag(SecurityProtocolType.Tls12));
+        Assert.True(protocolos.HasFlag(SecurityProtocolType.Tls13));
+        Assert.False(protocolos.HasFlag(SecurityProtocolType.Tls));
+        Assert.False(protocolos.HasFlag(SecurityProtocolType.Tls11));
+    }
+
+    [Fact]
     public void Criar_aponta_schemas_versao_101()
     {
         var repoSchemas = Path.GetFullPath(Path.Combine(
@@ -218,6 +229,7 @@ public class NFSeOpenAcFactoryTests
         };
 
         var open = factory.Criar(emitente, new EmitenteNfseContexto { CodigoMunicipioIbge = "4314902" });
+        Assert.Equal(NFSeOpenAcFactory.ResolverProtocolosTls(), open.Configuracoes.WebServices.Protocolos);
         Assert.EndsWith(Path.Combine("1.01"), open.Configuracoes.Arquivos.PathSchemas, StringComparison.OrdinalIgnoreCase);
     }
 }

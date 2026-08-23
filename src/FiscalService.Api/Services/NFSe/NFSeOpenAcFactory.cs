@@ -4,6 +4,7 @@ using FiscalService.Api.Services;
 using OpenAC.Net.DFe.Core.Common;
 using OpenAC.Net.NFSe.Nacional;
 using OpenAC.Net.NFSe.Nacional.Common.Types;
+using System.Net;
 
 namespace FiscalService.Api.Services.NFSe;
 
@@ -33,6 +34,8 @@ public sealed class NFSeOpenAcFactory
 
         nfse.Configuracoes.WebServices.Ambiente = ResolverAmbiente(emitente.Ambiente);
         nfse.Configuracoes.WebServices.ValidarSchemas = true;
+        // OpenAC.Net.DFe.Core default inclui Tls/Tls11 — removidos no .NET 8 (NotSupportedException).
+        nfse.Configuracoes.WebServices.Protocolos = ResolverProtocolosTls();
 
         var codMun = ctx?.CodigoMunicipioIbge
                      ?? emitente.Endereco?.CodigoMunicipio
@@ -64,6 +67,10 @@ public sealed class NFSeOpenAcFactory
         versao.Equals("Ve100", StringComparison.OrdinalIgnoreCase)
             ? VersaoNFSe.Ve100
             : VersaoNFSe.Ve101;
+
+    /// <summary>TLS aceitos pelo ADN/Sefin em .NET 8+ (sem SSL3/Tls1.0/Tls1.1).</summary>
+    public static SecurityProtocolType ResolverProtocolosTls() =>
+        SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
 
     private string ResolverPathSchemas(NfseConfig nfseCfg, VersaoNFSe versao)
     {
