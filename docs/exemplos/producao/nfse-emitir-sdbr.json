@@ -1,0 +1,30 @@
+{
+  "emitenteCnpj": "00000000000000",
+  "serie": "1",
+  "competencia": "2026-08-23",
+  "tomador": {
+    "cnpj": "53658565000127",
+    "nome": "SDBR SOLUCOES DIGITAIS LTDA",
+    "email": "contato@sdbr.app",
+    "endereco": {
+      "logradouro": "AV MARQ DE SAO VICENTE",
+      "numero": "2219",
+      "complemento": "CONJ 812 LETRA W200",
+      "bairro": "AGUA BRANCA",
+      "codigoMunicipio": "3550308",
+      "municipio": "SAO PAULO",
+      "uf": "SP",
+      "cep": "05036040"
+    }
+  },
+  "servico": {
+    "codTributacaoNacional": "140201",
+    "descricao": "Teste de emissao do webservice fiscal — assistencia tecnica (cancelamento imediato).",
+    "codigoMunicipioPrestacao": "4311403"
+  },
+  "valores": {
+    "valorServico": 1.0,
+    "issqn": "OperacaoTributavel",
+    "tipoRetencaoIssqn": "NaoRetido"
+  }
+}

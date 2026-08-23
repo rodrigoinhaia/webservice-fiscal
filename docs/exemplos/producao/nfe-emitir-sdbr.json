@@ -1,0 +1,47 @@
+{
+  "emitenteCnpj": "00000000000000",
+  "numeroNota": 0,
+  "serie": "3",
+  "naturezaOperacao": "Venda de mercadoria adquirida de terceiros",
+  "indicadorDestinatario": 2,
+  "informacoesAdicionais": "NOTA FISCAL DE TESTE DO WEBSERVICE — CANCELAMENTO IMEDIATO APOS AUTORIZACAO.",
+  "destinatario": {
+    "cnpj": "53658565000127",
+    "razaoSocial": "SDBR SOLUCOES DIGITAIS LTDA",
+    "nomeFantasia": "SDBR SOLUCOES DIGITAIS",
+    "indicadorIe": 9,
+    "email": "contato@sdbr.app",
+    "telefone": "5121890989",
+    "endereco": {
+      "logradouro": "AV MARQ DE SAO VICENTE",
+      "numero": "2219",
+      "complemento": "CONJ 812 LETRA W200",
+      "bairro": "AGUA BRANCA",
+      "codigoMunicipio": "3550308",
+      "municipio": "SAO PAULO",
+      "uf": "SP",
+      "cep": "05036040"
+    }
+  },
+  "itens": [
+    {
+      "numeroItem": 1,
+      "codigoProduto": "TESTE-WS",
+      "descricaoProduto": "ITEM DE TESTE WEBSERVICE FISCAL",
+      "ncm": "84713012",
+      "cfop": "6102",
+      "unidadeComercial": "UN",
+      "quantidadeComercial": 1,
+      "valorUnitarioComercial": 1.0,
+      "valorTotalBruto": 1.0,
+      "csosnIcms": "102",
+      "origemMercadoria": "0"
+    }
+  ],
+  "pagamentos": [
+    {
+      "formaPagamento": "01",
+      "valorPagamento": 1.0
+    }
+  ]
+}

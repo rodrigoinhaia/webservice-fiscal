@@ -1,0 +1,34 @@
+{
+  "emitenteCnpj": "00000000000000",
+  "numeroNota": 0,
+  "serie": "2",
+  "naturezaOperacao": "Venda PDV teste webservice",
+  "informacoesAdicionais": "NFC-E DE TESTE — CANCELAMENTO IMEDIATO APOS AUTORIZACAO.",
+  "destinatario": {
+    "cnpj": "53658565000127",
+    "razaoSocial": "SDBR SOLUCOES DIGITAIS LTDA",
+    "indicadorIe": 9,
+    "email": "contato@sdbr.app"
+  },
+  "itens": [
+    {
+      "numeroItem": 1,
+      "codigoProduto": "TESTE-PDV",
+      "descricaoProduto": "ITEM TESTE NFC-E WEBSERVICE",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "unidadeComercial": "UN",
+      "quantidadeComercial": 1,
+      "valorUnitarioComercial": 1.0,
+      "valorTotalBruto": 1.0,
+      "csosnIcms": "102",
+      "origemMercadoria": "0"
+    }
+  ],
+  "pagamentos": [
+    {
+      "formaPagamento": "01",
+      "valorPagamento": 1.0
+    }
+  ]
+}
