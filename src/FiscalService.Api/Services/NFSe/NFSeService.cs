@@ -61,7 +61,8 @@ public sealed class NFSeService
             var dps = NFSeDpsMapper.MontarDps(request, request.ConfiguracaoEmitente, ctx, numero, versao, ambiente);
             var openAc = _openAcFactory.Criar(request.ConfiguracaoEmitente, ctx);
 
-            NFSeDpsXmlNormalizer.AssinarDps(dps, openAc.Configuracoes);
+            using var certificado = _openAcFactory.CarregarCertificadoEmitente(request.ConfiguracaoEmitente);
+            NFSeDpsXmlNormalizer.AssinarDps(dps, openAc.Configuracoes, certificado);
 
             var retorno = await SefazRetry.ExecuteAsync(_fiscalConfig, _logger, "NFSeEnviar", () =>
                 openAc.EnviarAsync(dps));
@@ -139,7 +140,8 @@ public sealed class NFSeService
                 request, request.ConfiguracaoEmitente, versao, ambiente);
 
             var openAc = _openAcFactory.Criar(request.ConfiguracaoEmitente, ctx);
-            NFSeDpsXmlNormalizer.AssinarEvento(evento, openAc.Configuracoes);
+            using var certificado = _openAcFactory.CarregarCertificadoEmitente(request.ConfiguracaoEmitente);
+            NFSeDpsXmlNormalizer.AssinarEvento(evento, openAc.Configuracoes, certificado);
 
             var retorno = await SefazRetry.ExecuteAsync(_fiscalConfig, _logger, "NFSeCancelar", () =>
                 openAc.EnviarEventoAsync(evento));

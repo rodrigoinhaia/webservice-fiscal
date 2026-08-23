@@ -5,6 +5,7 @@ using OpenAC.Net.DFe.Core.Common;
 using OpenAC.Net.NFSe.Nacional;
 using OpenAC.Net.NFSe.Nacional.Common.Types;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 
 namespace FiscalService.Api.Services.NFSe;
 
@@ -58,6 +59,11 @@ public sealed class NFSeOpenAcFactory
 
         return nfse;
     }
+
+    public X509Certificate2 CarregarCertificadoEmitente(ConfiguracaoEmitenteRequest emitente) =>
+        _certificadoService.CarregarCertificado(
+            _certificadoService.ResolvePath(emitente.CertificadoPath),
+            emitente.CertificadoSenha);
 
     public static DFeTipoAmbiente ResolverAmbiente(string ambiente) =>
         ambiente.Equals("Producao", StringComparison.OrdinalIgnoreCase)

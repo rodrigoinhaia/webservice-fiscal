@@ -1,7 +1,8 @@
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
+using OpenAC.Net.DFe.Core;
 using OpenAC.Net.DFe.Core.Common;
 using OpenAC.Net.DFe.Core.Document;
 using OpenAC.Net.NFSe.Nacional.Common;
@@ -24,47 +25,45 @@ internal static class NFSeDpsXmlNormalizer
         @"(<inf(?:DPS|PedReg)\b[^>]*)\s+xmlns=""""",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-    public static void AssinarDps(Dps dps, ConfiguracaoNFSe configuracao)
+    public static void AssinarDps(Dps dps, ConfiguracaoNFSe configuracao, X509Certificate2 certificado)
     {
         LimparAssinaturaVazia(dps);
         dps.GerarId();
 
         var options = ObterSaveOptions(configuracao);
         var xmlCorrigido = RemoverXmlnsVazioInfAssinado(dps.GetXml(options, Encoding.UTF8));
+        var assinado = XmlSigning.AssinarXml(
+            xmlCorrigido,
+            "DPS",
+            "infDPS",
+            "Id",
+            certificado,
+            comments: false,
+            identado: false,
+            showDeclaration: true,
+            SignDigest.SHA1);
 
-        dps.ReadXml(XElement.Parse(xmlCorrigido));
-        LimparAssinaturaVazia(dps);
-        dps.Assinar(configuracao);
-        NormalizarDpsAposAssinatura(dps);
+        DefinirXml(dps, AjustarXmlAposAssinatura(assinado));
     }
 
-    public static void AssinarEvento(PedidoRegistroEvento evento, ConfiguracaoNFSe configuracao)
+    public static void AssinarEvento(PedidoRegistroEvento evento, ConfiguracaoNFSe configuracao, X509Certificate2 certificado)
     {
         LimparAssinaturaVazia(evento);
 
         var options = ObterSaveOptions(configuracao);
         var xmlCorrigido = RemoverXmlnsVazioInfAssinado(evento.GetXml(options, Encoding.UTF8));
+        var assinado = XmlSigning.AssinarXml(
+            xmlCorrigido,
+            "pedRegEvento",
+            "infPedReg",
+            "Id",
+            certificado,
+            comments: false,
+            identado: false,
+            showDeclaration: true,
+            SignDigest.SHA1);
 
-        evento.ReadXml(XElement.Parse(xmlCorrigido));
-        LimparAssinaturaVazia(evento);
-        evento.Assinar(configuracao);
-        NormalizarEventoAposAssinatura(evento);
-    }
-
-    public static void NormalizarDpsAposAssinatura(Dps dps)
-    {
-        if (string.IsNullOrWhiteSpace(dps.Xml))
-            return;
-
-        DefinirXml(dps, AjustarXmlAposAssinatura(dps.Xml));
-    }
-
-    public static void NormalizarEventoAposAssinatura(PedidoRegistroEvento evento)
-    {
-        if (string.IsNullOrWhiteSpace(evento.Xml))
-            return;
-
-        DefinirXml(evento, AjustarXmlAposAssinatura(evento.Xml));
+        DefinirXml(evento, AjustarXmlAposAssinatura(assinado));
     }
 
     internal static string RemoverXmlnsVazioInfAssinado(string xml) =>
