@@ -28,6 +28,7 @@ public sealed class NFSeOpenAcFactory
 
         nfse.Configuracoes.Geral.Versao = versao;
         nfse.Configuracoes.Geral.RetirarAcentos = true;
+        nfse.Configuracoes.Geral.AssinarXml = false;
         nfse.Configuracoes.Geral.Salvar = _fiscalConfig.SalvarXmls;
         nfse.Configuracoes.Arquivos.VersaoSchema = versao;
         nfse.Configuracoes.Arquivos.Salvar = _fiscalConfig.SalvarXmls;
