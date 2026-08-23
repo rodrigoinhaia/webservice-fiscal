@@ -70,7 +70,7 @@ O serviço ficará disponível em `http://localhost:5555`.
 - **Dockerfile:** `Dockerfile` na raiz do repositório (contexto de build = raiz).
 - **Porta do container:** `8080` (mapeie a porta pública do painel para `8080`).
 - **Variáveis de ambiente (mínimo):** `ApiKey`, `Database__ConnectionString` (Postgres gerenciado ou URL interna do painel). Opcionalmente `FISCAL__Ambiente`, `FISCAL__TimeoutWs`, etc., como no `docker-compose.yml`.
-- **Persistência:** monte volumes ou disco persistente em `/app/xmls`, `/app/certificados` e `/app/logs` se quiser reter XMLs, certificados e logs entre deploys. Sem volume em `/app/logs`, o app continua no **console** (sink de arquivo é ignorado se o diretório não for gravável). Configure **backup** do volume do Postgres no painel (snapshot ou dump agendado).
+- **Persistência:** monte volumes ou disco persistente em `/app/xmls`, `/app/certificados`, `/app/logs` e **`/app/keys`** (Data Protection — senhas de certificado criptografadas no banco). Sem `/app/keys`, um redeploy invalida as senhas já salvas (`CryptographicException: key was not found in the key ring`). **Não** monte volume em `/app/schemas` (XSDs vêm na imagem; volume vazio esconde os arquivos). Sem volume em `/app/logs`, o app continua no **console**. Configure **backup** do volume do Postgres no painel (snapshot ou dump agendado).
 - **Homologação rápida (15 min):** [docs/HOMOLOGACAO-RAPIDA.md](docs/HOMOLOGACAO-RAPIDA.md) → `.\scripts\smoke-minimo.ps1`
 - **Checklist completo:** [docs/SMOKE-HOMOLOGACAO.md](docs/SMOKE-HOMOLOGACAO.md) → `.\scripts\smoke-homologacao.ps1`
 
@@ -477,7 +477,10 @@ Você também pode definir `Database__ConnectionString` completa no compose, se 
 | `fiscal_xmls` | `/app/xmls` | XMLs autorizados (documentos fiscais legais) |
 | `fiscal_certs` | `/app/certificados` | Certificados .pfx |
 | `fiscal_logs` | `/app/logs` | Logs rotativos do Serilog |
+| `fiscal_keys` | `/app/keys` | Chaves ASP.NET Data Protection (senhas de certificado no banco) |
 | `fiscal_pgdata` | `/var/lib/postgresql/data` | Dados do PostgreSQL |
+
+> **Não** use volume em `/app/schemas` — os XSD são copiados na imagem no build.
 
 ---
 

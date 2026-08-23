@@ -806,8 +806,9 @@ Antes do `WebApplication.CreateBuilder`:
 - Pacotes de runtime instalados: `libfontconfig1`, `libfreetype6`, `libx11-6`,
   `libxext6`, `libxrender1`, `fonts-dejavu-core`, `fonts-liberation`, `curl`
   (este último para o `HEALTHCHECK`).
-- Cria `/app/{xmls,schemas,certificados,logs}` (sobrescritos por volumes em
-  produção). Schemas XSD do DFe.NET são copiados em `/app/schemas`.
+- Cria `/app/{xmls,schemas,certificados,logs,keys}` (sobrescritos por volumes em
+  produção, **exceto** `schemas` — não monte volume vazio aí). Schemas XSD do DFe.NET são copiados em `/app/schemas`.
+  `/app/keys` guarda o key ring do ASP.NET Data Protection (senhas de certificado).
 - Variáveis padrão: `ASPNETCORE_URLS=http://+:8080`,
   `ASPNETCORE_ENVIRONMENT=Production`.
 - `HEALTHCHECK`: `curl -f http://localhost:8080/health`.
@@ -822,7 +823,7 @@ Sobe dois serviços:
 | `db` | `postgres:16-alpine` | Banco com `pg_isready` healthcheck |
 
 Volumes nomeados (persistência): `fiscal_xmls`, `fiscal_certs`, `fiscal_logs`,
-`fiscal_pgdata`.
+`fiscal_keys`, `fiscal_pgdata`.
 
 ### 17.3 Easypanel / Painéis Docker
 
@@ -830,7 +831,7 @@ Volumes nomeados (persistência): `fiscal_xmls`, `fiscal_certs`, `fiscal_logs`,
 - **Dockerfile:** `Dockerfile` na raiz do repositório (contexto de build = raiz).
 - **Porta:** `8080` interna.
 - **Variáveis mínimas:** `ApiKey`, `Database__ConnectionString` (ou `DB_PASSWORD` + helpers).
-- **Persistência:** monte volumes em `/app/xmls`, `/app/certificados`, `/app/logs`.
+- **Persistência:** monte volumes em `/app/xmls`, `/app/certificados`, `/app/logs` e `/app/keys`. Não monte `/app/schemas`.
 - **Pós-deploy:** seguir `docs/SMOKE-HOMOLOGACAO.md` (saúde, auth, NFC-e/QR,
   numeração, certificado).
 
