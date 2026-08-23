@@ -33,7 +33,7 @@ public sealed class NFSeOpenAcFactory
         nfse.Configuracoes.Arquivos.Salvar = _fiscalConfig.SalvarXmls;
 
         nfse.Configuracoes.WebServices.Ambiente = ResolverAmbiente(emitente.Ambiente);
-        nfse.Configuracoes.WebServices.ValidarSchemas = true;
+        nfse.Configuracoes.WebServices.ValidarSchemas = nfseCfg.ValidarSchemas;
         // OpenAC.Net.DFe.Core default inclui Tls/Tls11 — removidos no .NET 8 (NotSupportedException).
         nfse.Configuracoes.WebServices.Protocolos = ResolverProtocolosTls();
 

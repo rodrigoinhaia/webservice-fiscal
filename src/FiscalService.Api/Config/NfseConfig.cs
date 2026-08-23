@@ -16,4 +16,10 @@ public sealed class NfseConfig
 
     /// <summary>Timeout em segundos para chamadas REST ADN/Sefin (0 = usa Fiscal:TimeoutWs).</summary>
     public int TimeoutWs { get; set; }
+
+    /// <summary>
+    /// Valida XML da DPS contra XSD local antes do envio.
+    /// Default false: validador OpenAC falha em .NET 8 (infDPS/namespace) — SEFIN valida no servidor.
+    /// </summary>
+    public bool ValidarSchemas { get; set; }
 }
