@@ -21,8 +21,10 @@ public sealed class NFCeEmitirRequestValidator : AbstractValidator<NFCeEmitirReq
             .Must(s => int.TryParse(s, out var n) && n is >= 1 and <= 999)
             .WithMessage("Série deve ser um número entre 1 e 999.");
 
-        RuleFor(x => x.IdCsc).NotEmpty();
-        RuleFor(x => x.Csc).NotEmpty();
+        RuleFor(x => x.IdCsc).NotEmpty()
+            .When(x => string.IsNullOrWhiteSpace(x.EmitenteCnpj));
+        RuleFor(x => x.Csc).NotEmpty()
+            .When(x => string.IsNullOrWhiteSpace(x.EmitenteCnpj));
 
         RuleFor(x => x.QrCodeVersao)
             .Must(v => string.IsNullOrWhiteSpace(v) || v.Trim() is "1" or "2" or "3")

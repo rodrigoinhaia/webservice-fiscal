@@ -17,26 +17,44 @@ public class NumeracaoController : ControllerBase
         _numeracaoService = numeracaoService;
     }
 
-    /// <summary>Retorna o próximo número disponível para o CNPJ/modelo/série informados.</summary>
+    /// <summary>
+    /// Próximo número para CNPJ/modelo/série/ambiente.
+    /// Por padrão <c>reservar=true</c> (reserva atômica). Use <c>reservar=false</c> para apenas consultar.
+    /// </summary>
     [HttpGet("{cnpj}/{modelo}/{serie}")]
-    public async Task<IActionResult> ObterProximo(string cnpj, string modelo, string serie, CancellationToken ct)
+    public async Task<IActionResult> ObterProximo(
+        string cnpj,
+        string modelo,
+        string serie,
+        [FromQuery] string? ambiente = null,
+        [FromQuery] bool reservar = true,
+        CancellationToken ct = default)
     {
         try
         {
-            var proximo = await _numeracaoService.ObterProximoNumeroAsync(cnpj, modelo, serie, ct);
+            var amb = NumeracaoService.NormalizarAmbiente(ambiente);
+            var proximo = reservar
+                ? await _numeracaoService.ObterProximoNumeroAsync(cnpj, modelo, serie, amb, ct)
+                : await _numeracaoService.ConsultarProximoNumeroAsync(cnpj, modelo, serie, amb, ct);
+
             return Ok(new NumeracaoResponse
             {
                 Cnpj = cnpj,
                 Modelo = modelo,
                 Serie = serie,
-                ProximoNumero = proximo
+                Ambiente = amb,
+                ProximoNumero = proximo,
+                Reservado = reservar
             });
         }
         catch (Exception ex)
         {
             return StatusCode(500, new NumeracaoResponse
             {
-                Cnpj = cnpj, Modelo = modelo, Serie = serie,
+                Cnpj = cnpj,
+                Modelo = modelo,
+                Serie = serie,
+                Ambiente = NumeracaoService.NormalizarAmbiente(ambiente),
                 Erro = new ErroResponse { Tipo = "ErroInterno", Mensagem = ex.Message, Timestamp = DateTime.UtcNow }
             });
         }
@@ -50,8 +68,15 @@ public class NumeracaoController : ControllerBase
 
         try
         {
-            await _numeracaoService.ConfirmarNumeroAsync(request.Cnpj, request.Modelo, request.Serie, request.Numero, ct);
-            return Ok(new { sucesso = true, mensagem = $"Número {request.Numero} confirmado com sucesso." });
+            var amb = NumeracaoService.NormalizarAmbiente(request.Ambiente);
+            await _numeracaoService.ConfirmarNumeroAsync(
+                request.Cnpj, request.Modelo, request.Serie, request.Numero, amb, ct);
+            return Ok(new
+            {
+                sucesso = true,
+                mensagem = $"Número {request.Numero} confirmado com sucesso ({amb}).",
+                ambiente = amb
+            });
         }
         catch (Exception ex)
         {

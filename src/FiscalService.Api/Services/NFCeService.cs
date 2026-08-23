@@ -65,6 +65,13 @@ public class NFCeService
         try
         {
             request.ConfiguracaoEmitente = await _emitenteService.ResolverConfiguracaoAsync(request, ct);
+            if (string.IsNullOrWhiteSpace(request.IdCsc))
+                request.IdCsc = request.ConfiguracaoEmitente.IdCsc ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(request.Csc))
+                request.Csc = request.ConfiguracaoEmitente.Csc ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(request.IdCsc) || string.IsNullOrWhiteSpace(request.Csc))
+                return FiscalResponse.Falha("Validacao", "IdCSC e CSC são obrigatórios (informe no request ou cadastre no emitente).");
+
             NFeEmissaoPreconditions.ValidarEnderecoEmitenteOuLancar(request.ConfiguracaoEmitente);
             ImpostoTributacaoCatalog.ValidarItensOuLancar(request.ConfiguracaoEmitente.Crt, request.Itens);
             NFeTotaisCalculator.ValidarConsistenciaOuLancar(request.Itens);
@@ -100,7 +107,7 @@ public class NFCeService
                 request.ConfiguracaoEmitente.Ambiente, ct);
 
             await SincronizarNumeracaoAsync(request.ConfiguracaoEmitente.Cnpj, "65",
-                request.Serie, request.NumeroNota, ct);
+                request.Serie, request.NumeroNota, request.ConfiguracaoEmitente.Ambiente, ct);
 
             string? pdfBase64 = null;
             if (!string.IsNullOrWhiteSpace(xmlAutorizado))
@@ -361,16 +368,16 @@ public class NFCeService
         };
     }
 
-    private async Task SincronizarNumeracaoAsync(string cnpj, string modelo, string serie, int numero, CancellationToken ct)
+    private async Task SincronizarNumeracaoAsync(string cnpj, string modelo, string serie, int numero, string ambiente, CancellationToken ct)
     {
         try
         {
-            await _numeracaoService.ConfirmarNumeroAsync(cnpj, modelo, serie, numero, ct);
+            await _numeracaoService.ConfirmarNumeroAsync(cnpj, modelo, serie, numero, ambiente, ct);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Falha ao sincronizar numeração NFC-e: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Numero={Numero}",
-                cnpj, modelo, serie, numero);
+            _logger.LogWarning(ex, "Falha ao sincronizar numeração NFC-e: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Ambiente={Ambiente} Numero={Numero}",
+                cnpj, modelo, serie, ambiente, numero);
         }
     }
 

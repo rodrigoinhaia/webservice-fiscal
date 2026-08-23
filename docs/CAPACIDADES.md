@@ -178,8 +178,8 @@ Emitente cadastrado pode incluir `inscricaoMunicipal` e `email` (opcionais). Exe
 
 | Método | Rota | Operação |
 |---|---|---|
-| GET | `/api/numeracao/{cnpj}/{modelo}/{serie}` | Reserva próximo número (`SELECT FOR UPDATE`) |
-| POST | `/api/numeracao/confirmar` | Ajusta contador para um valor explícito (após inutilização/correção) |
+| GET | `/api/numeracao/{cnpj}/{modelo}/{serie}` | Reserva próximo número (`SELECT FOR UPDATE`). Query: `ambiente` (padrão Homologacao), `reservar=false` só consulta |
+| POST | `/api/numeracao/confirmar` | Ajusta contador para um valor explícito (após inutilização/correção). Body inclui `ambiente` opcional |
 
 ### 4.8 Consulta Geral — `ConsultaController` (`/api/consulta`)
 

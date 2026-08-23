@@ -17,10 +17,9 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<NumeracaoSequencial>(entity =>
         {
-            // Garante unicidade por CNPJ + Modelo + Série para controle de numeração
-            entity.HasIndex(n => new { n.Cnpj, n.Modelo, n.Serie })
+            entity.HasIndex(n => new { n.Cnpj, n.Modelo, n.Serie, n.Ambiente })
                   .IsUnique()
-                  .HasDatabaseName("ix_numeracoes_cnpj_modelo_serie");
+                  .HasDatabaseName("ix_numeracoes_cnpj_modelo_serie_ambiente");
         });
 
         modelBuilder.Entity<EmissaoLog>(entity =>

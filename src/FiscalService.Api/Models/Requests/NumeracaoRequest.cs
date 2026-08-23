@@ -7,7 +7,7 @@ public class NumeracaoConfirmarRequest
     [Required]
     public string Cnpj { get; set; } = string.Empty;
 
-    /// <summary>Modelo do documento: "55", "65", "57", "58".</summary>
+    /// <summary>Modelo do documento: "55", "65", "57", "58", "NS".</summary>
     [Required]
     public string Modelo { get; set; } = string.Empty;
 
@@ -15,6 +15,9 @@ public class NumeracaoConfirmarRequest
     public string Serie { get; set; } = string.Empty;
 
     public int Numero { get; set; }
+
+    /// <summary>"Homologacao" ou "Producao" (padrão Homologacao).</summary>
+    public string? Ambiente { get; set; }
 }
 
 public class StatusServicoRequest : IEmitenteConfigSource

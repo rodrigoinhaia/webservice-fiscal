@@ -15,21 +15,31 @@ public class NumeracaoService
         _logger = logger;
     }
 
+    public static string NormalizarAmbiente(string? ambiente) =>
+        string.Equals(ambiente?.Trim(), "Producao", StringComparison.OrdinalIgnoreCase)
+            ? "Producao"
+            : "Homologacao";
+
     /// <summary>
     /// Reserva atomicamente o próximo número disponível usando SELECT FOR UPDATE (pessimistic lock PostgreSQL).
-    /// Garante que chamadas concorrentes nunca produzam o mesmo número.
+    /// Contadores são separados por ambiente (Homologacao / Producao).
     /// </summary>
-    public async Task<int> ObterProximoNumeroAsync(string cnpj, string modelo, string serie, CancellationToken ct = default)
+    public async Task<int> ObterProximoNumeroAsync(
+        string cnpj,
+        string modelo,
+        string serie,
+        string? ambiente = null,
+        CancellationToken ct = default)
     {
+        var amb = NormalizarAmbiente(ambiente);
         await using var transaction = await _db.Database.BeginTransactionAsync(ct);
 
         try
         {
-            // SELECT FOR UPDATE garante exclusão mútua no PostgreSQL
             var numeracao = await _db.NumeracoesSequenciais
                 .FromSqlRaw(
-                    "SELECT * FROM numeracoes_sequenciais WHERE cnpj = {0} AND modelo = {1} AND serie = {2} FOR UPDATE",
-                    cnpj, modelo, serie)
+                    "SELECT * FROM numeracoes_sequenciais WHERE cnpj = {0} AND modelo = {1} AND serie = {2} AND ambiente = {3} FOR UPDATE",
+                    cnpj, modelo, serie, amb)
                 .FirstOrDefaultAsync(ct);
 
             if (numeracao is null)
@@ -39,6 +49,7 @@ public class NumeracaoService
                     Cnpj = cnpj,
                     Modelo = modelo,
                     Serie = serie,
+                    Ambiente = amb,
                     UltimoNumero = 1,
                     UltimaAtualizacao = DateTime.UtcNow
                 };
@@ -53,8 +64,9 @@ public class NumeracaoService
             await _db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
 
-            _logger.LogInformation("Número reservado: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Numero={Numero}",
-                cnpj, modelo, serie, numeracao.UltimoNumero);
+            _logger.LogInformation(
+                "Número reservado: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Ambiente={Ambiente} Numero={Numero}",
+                cnpj, modelo, serie, amb, numeracao.UltimoNumero);
 
             return numeracao.UltimoNumero;
         }
@@ -66,26 +78,53 @@ public class NumeracaoService
     }
 
     /// <summary>Retorna o último número usado sem reservar um novo.</summary>
-    public async Task<int> ConsultarUltimoNumeroAsync(string cnpj, string modelo, string serie, CancellationToken ct = default)
+    public async Task<int> ConsultarUltimoNumeroAsync(
+        string cnpj,
+        string modelo,
+        string serie,
+        string? ambiente = null,
+        CancellationToken ct = default)
     {
+        var amb = NormalizarAmbiente(ambiente);
         var numeracao = await _db.NumeracoesSequenciais
             .AsNoTracking()
-            .FirstOrDefaultAsync(n => n.Cnpj == cnpj && n.Modelo == modelo && n.Serie == serie, ct);
+            .FirstOrDefaultAsync(
+                n => n.Cnpj == cnpj && n.Modelo == modelo && n.Serie == serie && n.Ambiente == amb,
+                ct);
 
         return numeracao?.UltimoNumero ?? 0;
     }
 
-    /// <summary>Força o contador para um número específico (usado após inutilização ou correção manual).</summary>
-    public async Task ConfirmarNumeroAsync(string cnpj, string modelo, string serie, int numero, CancellationToken ct = default)
+    /// <summary>Próximo número previsível sem reservar (último + 1).</summary>
+    public async Task<int> ConsultarProximoNumeroAsync(
+        string cnpj,
+        string modelo,
+        string serie,
+        string? ambiente = null,
+        CancellationToken ct = default)
     {
+        var ultimo = await ConsultarUltimoNumeroAsync(cnpj, modelo, serie, ambiente, ct);
+        return ultimo + 1;
+    }
+
+    /// <summary>Força o contador para um número específico (usado após inutilização ou correção manual).</summary>
+    public async Task ConfirmarNumeroAsync(
+        string cnpj,
+        string modelo,
+        string serie,
+        int numero,
+        string? ambiente = null,
+        CancellationToken ct = default)
+    {
+        var amb = NormalizarAmbiente(ambiente);
         await using var transaction = await _db.Database.BeginTransactionAsync(ct);
 
         try
         {
             var numeracao = await _db.NumeracoesSequenciais
                 .FromSqlRaw(
-                    "SELECT * FROM numeracoes_sequenciais WHERE cnpj = {0} AND modelo = {1} AND serie = {2} FOR UPDATE",
-                    cnpj, modelo, serie)
+                    "SELECT * FROM numeracoes_sequenciais WHERE cnpj = {0} AND modelo = {1} AND serie = {2} AND ambiente = {3} FOR UPDATE",
+                    cnpj, modelo, serie, amb)
                 .FirstOrDefaultAsync(ct);
 
             if (numeracao is null)
@@ -95,6 +134,7 @@ public class NumeracaoService
                     Cnpj = cnpj,
                     Modelo = modelo,
                     Serie = serie,
+                    Ambiente = amb,
                     UltimoNumero = numero,
                     UltimaAtualizacao = DateTime.UtcNow
                 });

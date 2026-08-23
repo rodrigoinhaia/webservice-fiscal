@@ -77,7 +77,7 @@ public class CTeService
                 request.ConfiguracaoEmitente.Ambiente, ct);
 
             await SincronizarNumeracaoAsync(request.ConfiguracaoEmitente.Cnpj, "57",
-                request.Serie, request.NumeroNota, ct);
+                request.Serie, request.NumeroNota, request.ConfiguracaoEmitente.Ambiente, ct);
 
             _logger.LogInformation("CT-e autorizado: Chave={Chave}", chave);
             return FiscalResponse.Ok(chave, protocolo, cStat, xMotivo);
@@ -282,16 +282,16 @@ public class CTeService
         };
     }
 
-    private async Task SincronizarNumeracaoAsync(string cnpj, string modelo, string serie, int numero, CancellationToken ct)
+    private async Task SincronizarNumeracaoAsync(string cnpj, string modelo, string serie, int numero, string ambiente, CancellationToken ct)
     {
         try
         {
-            await _numeracaoService.ConfirmarNumeroAsync(cnpj, modelo, serie, numero, ct);
+            await _numeracaoService.ConfirmarNumeroAsync(cnpj, modelo, serie, numero, ambiente, ct);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Falha ao sincronizar numeração CT-e: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Numero={Numero}",
-                cnpj, modelo, serie, numero);
+            _logger.LogWarning(ex, "Falha ao sincronizar numeração CT-e: CNPJ={CNPJ} Modelo={Modelo} Serie={Serie} Ambiente={Ambiente} Numero={Numero}",
+                cnpj, modelo, serie, ambiente, numero);
         }
     }
 

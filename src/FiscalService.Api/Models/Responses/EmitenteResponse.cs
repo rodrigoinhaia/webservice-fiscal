@@ -17,6 +17,11 @@ public class EmitenteResponse
     public DateTime CriadoEm { get; set; }
     public DateTime AtualizadoEm { get; set; }
     public EnderecoEmitenteResponse? Endereco { get; set; }
+
+    public string? IdCscHomologacao { get; set; }
+    public bool PossuiCscHomologacao { get; set; }
+    public string? IdCscProducao { get; set; }
+    public bool PossuiCscProducao { get; set; }
 }
 
 public class EnderecoEmitenteResponse

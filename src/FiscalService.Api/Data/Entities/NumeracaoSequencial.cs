@@ -26,6 +26,12 @@ public class NumeracaoSequencial
     [Column("serie")]
     public string Serie { get; set; } = string.Empty;
 
+    /// <summary>"Homologacao" ou "Producao" — contadores separados por ambiente.</summary>
+    [Required]
+    [MaxLength(20)]
+    [Column("ambiente")]
+    public string Ambiente { get; set; } = "Homologacao";
+
     /// <summary>Último número efetivamente usado ou reservado.</summary>
     [Column("ultimo_numero")]
     public int UltimoNumero { get; set; }

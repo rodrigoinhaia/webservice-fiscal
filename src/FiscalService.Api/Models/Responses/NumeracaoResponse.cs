@@ -5,7 +5,9 @@ public class NumeracaoResponse
     public string Cnpj { get; set; } = string.Empty;
     public string Modelo { get; set; } = string.Empty;
     public string Serie { get; set; } = string.Empty;
+    public string Ambiente { get; set; } = "Homologacao";
     public int ProximoNumero { get; set; }
+    public bool Reservado { get; set; }
     public ErroResponse? Erro { get; set; }
 }
 

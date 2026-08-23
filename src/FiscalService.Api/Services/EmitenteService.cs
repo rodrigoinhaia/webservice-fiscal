@@ -41,6 +41,7 @@ public sealed class EmitenteService
         var agora = DateTime.UtcNow;
         var entidade = MapearParaEntidade(new Emitente(), request, cnpj, agora);
         entidade.CertificadoSenhaProtegida = _senhaProtector.Proteger(request.CertificadoSenha);
+        AplicarCscCadastro(entidade, request);
 
         _db.Emitentes.Add(entidade);
         await _db.SaveChangesAsync(ct);
@@ -110,6 +111,8 @@ public sealed class EmitenteService
         if (request.InscricaoMunicipal is not null) entidade.InscricaoMunicipal = request.InscricaoMunicipal.Trim();
         if (request.Email is not null) entidade.Email = request.Email.Trim();
 
+        AplicarCscAtualizacao(entidade, request);
+
         if (request.Ativo.HasValue) entidade.Ativo = request.Ativo.Value;
         entidade.AtualizadoEm = DateTime.UtcNow;
 
@@ -151,7 +154,16 @@ public sealed class EmitenteService
 
             var config = EntidadeParaConfig(entidade);
             if (overrideConfig is not null)
+            {
                 MesclarOverride(config, overrideConfig, cnpjRef);
+                if (!string.IsNullOrWhiteSpace(overrideConfig.Ambiente)
+                    && !string.Equals(overrideConfig.Ambiente, entidade.Ambiente, StringComparison.OrdinalIgnoreCase))
+                {
+                    var (idCsc, csc) = ResolverCsc(entidade, config.Ambiente);
+                    if (string.IsNullOrWhiteSpace(overrideConfig.IdCsc)) config.IdCsc = idCsc;
+                    if (string.IsNullOrWhiteSpace(overrideConfig.Csc)) config.Csc = csc;
+                }
+            }
             return config;
         }
 
@@ -179,30 +191,83 @@ public sealed class EmitenteService
                 $"CNPJ do certificado ({validacao.Cnpj}) diverge do CNPJ cadastrado ({cnpj}).");
     }
 
-    private ConfiguracaoEmitenteRequest EntidadeParaConfig(Emitente e) => new()
+    private ConfiguracaoEmitenteRequest EntidadeParaConfig(Emitente e)
     {
-        Cnpj = e.Cnpj,
-        RazaoSocial = e.RazaoSocial,
-        NomeFantasia = e.NomeFantasia,
-        Ie = e.Ie,
-        Crt = e.Crt,
-        Uf = e.Uf,
-        Ambiente = e.Ambiente,
-        CertificadoPath = e.CertificadoPath,
-        CertificadoSenha = _senhaProtector.Desproteger(e.CertificadoSenhaProtegida),
-        Endereco = string.IsNullOrWhiteSpace(e.Logradouro) ? null : new EnderecoRequest
+        var (idCsc, csc) = ResolverCsc(e, e.Ambiente);
+        return new()
         {
-            Logradouro = e.Logradouro,
-            Numero = e.Numero,
-            Complemento = e.Complemento,
-            Bairro = e.Bairro,
-            Municipio = e.Municipio,
-            CodigoMunicipio = e.CodigoMunicipio,
+            Cnpj = e.Cnpj,
+            RazaoSocial = e.RazaoSocial,
+            NomeFantasia = e.NomeFantasia,
+            Ie = e.Ie,
+            Crt = e.Crt,
             Uf = e.Uf,
-            Cep = e.Cep,
-            Telefone = e.Telefone
+            Ambiente = e.Ambiente,
+            CertificadoPath = e.CertificadoPath,
+            CertificadoSenha = _senhaProtector.Desproteger(e.CertificadoSenhaProtegida),
+            IdCsc = idCsc,
+            Csc = csc,
+            Endereco = string.IsNullOrWhiteSpace(e.Logradouro) ? null : new EnderecoRequest
+            {
+                Logradouro = e.Logradouro,
+                Numero = e.Numero,
+                Complemento = e.Complemento,
+                Bairro = e.Bairro,
+                Municipio = e.Municipio,
+                CodigoMunicipio = e.CodigoMunicipio,
+                Uf = e.Uf,
+                Cep = e.Cep,
+                Telefone = e.Telefone
+            }
+        };
+    }
+
+    private (string? IdCsc, string? Csc) ResolverCsc(Emitente e, string ambiente)
+    {
+        var prod = string.Equals(ambiente, "Producao", StringComparison.OrdinalIgnoreCase);
+        var id = prod ? e.IdCscProducao : e.IdCscHomologacao;
+        var protegido = prod ? e.CscProducaoProtegido : e.CscHomologacaoProtegido;
+        string? csc = null;
+        if (!string.IsNullOrWhiteSpace(protegido))
+        {
+            try { csc = _senhaProtector.DesprotegerCsc(protegido); }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Falha ao desproteger CSC do emitente {Cnpj} ({Ambiente})", e.Cnpj, ambiente);
+            }
         }
-    };
+        return (id, csc);
+    }
+
+    private void AplicarCscCadastro(Emitente e, EmitenteCadastroRequest r)
+    {
+        if (!string.IsNullOrWhiteSpace(r.IdCscHomologacao))
+            e.IdCscHomologacao = r.IdCscHomologacao.Trim();
+        if (!string.IsNullOrWhiteSpace(r.CscHomologacao))
+            e.CscHomologacaoProtegido = _senhaProtector.ProtegerCsc(r.CscHomologacao.Trim());
+
+        if (!string.IsNullOrWhiteSpace(r.IdCscProducao))
+            e.IdCscProducao = r.IdCscProducao.Trim();
+        if (!string.IsNullOrWhiteSpace(r.CscProducao))
+            e.CscProducaoProtegido = _senhaProtector.ProtegerCsc(r.CscProducao.Trim());
+    }
+
+    private void AplicarCscAtualizacao(Emitente e, EmitenteAtualizarRequest r)
+    {
+        if (r.IdCscHomologacao is not null)
+            e.IdCscHomologacao = string.IsNullOrWhiteSpace(r.IdCscHomologacao) ? null : r.IdCscHomologacao.Trim();
+        if (r.CscHomologacao is not null)
+            e.CscHomologacaoProtegido = string.IsNullOrWhiteSpace(r.CscHomologacao)
+                ? null
+                : _senhaProtector.ProtegerCsc(r.CscHomologacao.Trim());
+
+        if (r.IdCscProducao is not null)
+            e.IdCscProducao = string.IsNullOrWhiteSpace(r.IdCscProducao) ? null : r.IdCscProducao.Trim();
+        if (r.CscProducao is not null)
+            e.CscProducaoProtegido = string.IsNullOrWhiteSpace(r.CscProducao)
+                ? null
+                : _senhaProtector.ProtegerCsc(r.CscProducao.Trim());
+    }
 
     private static void MesclarOverride(ConfiguracaoEmitenteRequest baseConfig, ConfiguracaoEmitenteRequest over, string cnpjEsperado)
     {
@@ -218,6 +283,8 @@ public sealed class EmitenteService
         if (over.Endereco is not null) baseConfig.Endereco = over.Endereco;
         if (!string.IsNullOrWhiteSpace(over.CertificadoPath)) baseConfig.CertificadoPath = over.CertificadoPath;
         if (!string.IsNullOrWhiteSpace(over.CertificadoSenha)) baseConfig.CertificadoSenha = over.CertificadoSenha;
+        if (!string.IsNullOrWhiteSpace(over.IdCsc)) baseConfig.IdCsc = over.IdCsc;
+        if (!string.IsNullOrWhiteSpace(over.Csc)) baseConfig.Csc = over.Csc;
     }
 
     private static Emitente MapearParaEntidade(Emitente e, EmitenteCadastroRequest r, string cnpj, DateTime agora)
@@ -267,6 +334,10 @@ public sealed class EmitenteService
         Ativo = e.Ativo,
         CriadoEm = e.CriadoEm,
         AtualizadoEm = e.AtualizadoEm,
+        IdCscHomologacao = e.IdCscHomologacao,
+        PossuiCscHomologacao = !string.IsNullOrWhiteSpace(e.CscHomologacaoProtegido),
+        IdCscProducao = e.IdCscProducao,
+        PossuiCscProducao = !string.IsNullOrWhiteSpace(e.CscProducaoProtegido),
         Endereco = string.IsNullOrWhiteSpace(e.Logradouro) ? null : new EnderecoEmitenteResponse
         {
             Logradouro = e.Logradouro,

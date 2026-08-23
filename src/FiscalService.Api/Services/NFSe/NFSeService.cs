@@ -52,6 +52,7 @@ public sealed class NFSeService
                              request.ConfiguracaoEmitente.Cnpj,
                              NFSeDpsMapper.ModeloNumeracao,
                              request.Serie,
+                             request.ConfiguracaoEmitente.Ambiente,
                              ct);
 
             var versao = NFSeOpenAcFactory.ResolverVersaoDps(_fiscalConfig.NFSe.VersaoDps);
@@ -94,6 +95,7 @@ public sealed class NFSeService
                 request.ConfiguracaoEmitente.Cnpj,
                 request.Serie,
                 numero,
+                request.ConfiguracaoEmitente.Ambiente,
                 ct);
 
             string? pdfBase64 = null;
@@ -306,18 +308,18 @@ public sealed class NFSeService
         }
     }
 
-    private async Task SincronizarNumeracaoAsync(string cnpj, string serie, int numero, CancellationToken ct)
+    private async Task SincronizarNumeracaoAsync(string cnpj, string serie, int numero, string ambiente, CancellationToken ct)
     {
         try
         {
             await _numeracaoService.ConfirmarNumeroAsync(
-                cnpj, NFSeDpsMapper.ModeloNumeracao, serie, numero, ct);
+                cnpj, NFSeDpsMapper.ModeloNumeracao, serie, numero, ambiente, ct);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex,
-                "Falha ao sincronizar numeração NFS-e CNPJ={CNPJ} Serie={Serie} Numero={Numero}",
-                cnpj, serie, numero);
+                "Falha ao sincronizar numeração NFS-e CNPJ={CNPJ} Serie={Serie} Ambiente={Ambiente} Numero={Numero}",
+                cnpj, serie, ambiente, numero);
         }
     }
 

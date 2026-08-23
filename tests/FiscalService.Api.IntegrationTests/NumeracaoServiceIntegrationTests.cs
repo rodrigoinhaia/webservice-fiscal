@@ -76,4 +76,22 @@ public sealed class NumeracaoServiceIntegrationTests : IClassFixture<PostgresFix
         Assert.Equal(50, await svc.ConsultarUltimoNumeroAsync(cnpj, "55", "1"));
         Assert.Equal(51, await svc.ObterProximoNumeroAsync(cnpj, "55", "1"));
     }
+
+    [SkippableFact]
+    public async Task Contadores_sao_independentes_por_ambiente()
+    {
+        Skip.IfNot(_fixture.IsRunning, "Docker não disponível — teste de integração ignorado.");
+
+        await using var ctx = CreateContext();
+        await ctx.Database.MigrateAsync();
+
+        var svc = new NumeracaoService(ctx, NullLogger<NumeracaoService>.Instance);
+        var cnpj = RandomCnpj14();
+
+        Assert.Equal(1, await svc.ObterProximoNumeroAsync(cnpj, "55", "1", "Homologacao"));
+        Assert.Equal(1, await svc.ObterProximoNumeroAsync(cnpj, "55", "1", "Producao"));
+        Assert.Equal(2, await svc.ObterProximoNumeroAsync(cnpj, "55", "1", "Homologacao"));
+        Assert.Equal(1, await svc.ConsultarUltimoNumeroAsync(cnpj, "55", "1", "Producao"));
+        Assert.Equal(2, await svc.ConsultarUltimoNumeroAsync(cnpj, "55", "1", "Homologacao"));
+    }
 }

@@ -19,12 +19,10 @@ public class NFCeEmitirRequest : IEmitenteConfigSource
     [Required]
     public List<PagamentoRequest> Pagamentos { get; set; } = new();
 
-    /// <summary>Identificador do CSC (Código de Segurança do Contribuinte) — obrigatório NFC-e.</summary>
-    [Required]
+    /// <summary>Identificador do CSC — obrigatório na emissão (request ou cadastro do emitente).</summary>
     public string IdCsc { get; set; } = string.Empty;
 
-    /// <summary>Código de Segurança do Contribuinte — obrigatório NFC-e.</summary>
-    [Required]
+    /// <summary>CSC — obrigatório na emissão (request ou cadastro do emitente).</summary>
     public string Csc { get; set; } = string.Empty;
 
     /// <summary>Versão do QR Code exigida pela UF: "1", "2" ou "3". Padrão "2" (NFe 4.00).</summary>

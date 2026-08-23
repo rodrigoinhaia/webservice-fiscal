@@ -90,6 +90,22 @@ public class Emitente
     [Column("email")]
     public string? Email { get; set; }
 
+    /// <summary>ID Token / IdCSC da NFC-e em homologação.</summary>
+    [MaxLength(10)]
+    [Column("id_csc_homologacao")]
+    public string? IdCscHomologacao { get; set; }
+
+    [Column("csc_homologacao_protegido")]
+    public string? CscHomologacaoProtegido { get; set; }
+
+    /// <summary>ID Token / IdCSC da NFC-e em produção.</summary>
+    [MaxLength(10)]
+    [Column("id_csc_producao")]
+    public string? IdCscProducao { get; set; }
+
+    [Column("csc_producao_protegido")]
+    public string? CscProducaoProtegido { get; set; }
+
     [Column("ativo")]
     public bool Ativo { get; set; } = true;
 

@@ -30,6 +30,18 @@ public class EmitenteCadastroRequest
     public string? InscricaoMunicipal { get; set; }
     public string? Email { get; set; }
 
+    /// <summary>ID Token CSC NFC-e (homologação).</summary>
+    public string? IdCscHomologacao { get; set; }
+
+    /// <summary>CSC NFC-e em texto (homologação) — armazenado protegido.</summary>
+    public string? CscHomologacao { get; set; }
+
+    /// <summary>ID Token CSC NFC-e (produção).</summary>
+    public string? IdCscProducao { get; set; }
+
+    /// <summary>CSC NFC-e em texto (produção) — armazenado protegido.</summary>
+    public string? CscProducao { get; set; }
+
     /// <summary>Se true, valida se o CNPJ do certificado coincide com o CNPJ cadastrado.</summary>
     public bool ValidarCnpjCertificado { get; set; } = true;
 }

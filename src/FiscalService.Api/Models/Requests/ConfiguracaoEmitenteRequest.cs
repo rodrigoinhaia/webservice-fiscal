@@ -32,4 +32,10 @@ public class ConfiguracaoEmitenteRequest
 
     [Required]
     public string CertificadoSenha { get; set; } = string.Empty;
+
+    /// <summary>IdCSC resolvido do cadastro (ou override) para NFC-e.</summary>
+    public string? IdCsc { get; set; }
+
+    /// <summary>CSC resolvido do cadastro (ou override) para NFC-e.</summary>
+    public string? Csc { get; set; }
 }

@@ -319,8 +319,8 @@ O campo `nome` é opcional; se omitir, usa o nome do arquivo enviado. A resposta
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| GET | `/api/numeracao/{cnpj}/{modelo}/{serie}` | Próximo número disponível |
-| POST | `/api/numeracao/confirmar` | Confirma uso de um número |
+| GET | `/api/numeracao/{cnpj}/{modelo}/{serie}` | Próximo número (`?ambiente=&reservar=true\|false`) |
+| POST | `/api/numeracao/confirmar` | Confirma uso de um número (`ambiente` opcional) |
 
 ### Geral
 
