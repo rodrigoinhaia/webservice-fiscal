@@ -218,7 +218,7 @@ public class MDFeService
         config.VersaoWebService.UfEmitente = UfHelper.MapearUf(emitente.Uf);
         config.VersaoWebService.TipoAmbiente =
             emitente.Ambiente == "Producao" ? TipoAmbiente.Producao : TipoAmbiente.Homologacao;
-        config.VersaoWebService.TimeOut = _globalConfig.TimeoutWs;
+        config.VersaoWebService.TimeOut = _globalConfig.TimeoutWsMilliseconds;
 
         return config;
     }

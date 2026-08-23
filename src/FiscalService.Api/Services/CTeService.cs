@@ -179,7 +179,7 @@ public class CTeService
         config.IsSalvarXml = _globalConfig.SalvarXmls;
         config.DiretorioSalvarXml = _globalConfig.DiretorioXmls;
         config.DiretorioSchemas = _globalConfig.DiretorioSchemas;
-        config.TimeOut = _globalConfig.TimeoutWs;
+        config.TimeOut = _globalConfig.TimeoutWsMilliseconds;
     }
 
     private static CTe.Classes.CTe ConstruirCTe(CTeEmitirRequest req)

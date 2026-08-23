@@ -350,7 +350,7 @@ public class NFeService
             DiretorioSchemas = _globalConfig.DiretorioSchemas,
             SalvarXmlServicos = _globalConfig.SalvarXmls,
             DiretorioSalvarXml = _globalConfig.DiretorioXmls,
-            TimeOut = _globalConfig.TimeoutWs
+            TimeOut = _globalConfig.TimeoutWsMilliseconds
         };
 
         var certPath = _globalConfig.ResolveCertificadoPath(emitente.CertificadoPath);
