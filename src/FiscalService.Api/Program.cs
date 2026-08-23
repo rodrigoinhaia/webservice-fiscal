@@ -194,14 +194,23 @@ try
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(connectionString));
 
-    // Chaves Data Protection em disco — sem volume /app/keys, senhas de certificado
-    // criptografadas no banco quebram após redeploy (key ring efêmero).
-    var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"]
-        ?? "/app/keys";
-    Directory.CreateDirectory(dataProtectionKeysPath);
-    builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+    // Data Protection: padrão PostgreSQL (sobrevive a redeploy sem volume /app/keys).
+    // Provider=FileSystem mantém compatibilidade com instalações antigas.
+    var dataProtectionProvider = builder.Configuration["DataProtection:Provider"] ?? "Database";
+    var dataProtection = builder.Services.AddDataProtection()
         .SetApplicationName("FiscalService.Api");
+    if (dataProtectionProvider.Equals("FileSystem", StringComparison.OrdinalIgnoreCase))
+    {
+        var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"] ?? "/app/keys";
+        Directory.CreateDirectory(dataProtectionKeysPath);
+        dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+        Log.Information("Data Protection: key ring em disco ({Path})", dataProtectionKeysPath);
+    }
+    else
+    {
+        dataProtection.PersistKeysToDbContext<AppDbContext>();
+        Log.Information("Data Protection: key ring no PostgreSQL (tabela data_protection_keys)");
+    }
     builder.Services.AddScoped<CertificadoSenhaProtector>();
     builder.Services.AddScoped<EmitenteService>();
 

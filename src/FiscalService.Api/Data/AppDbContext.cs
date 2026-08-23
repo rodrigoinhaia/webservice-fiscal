@@ -1,15 +1,17 @@
 using FiscalService.Api.Data.Entities;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace FiscalService.Api.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : DbContext, IDataProtectionKeyContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<EmissaoLog> EmissaoLogs { get; set; } = null!;
     public DbSet<NumeracaoSequencial> NumeracoesSequenciais { get; set; } = null!;
     public DbSet<Emitente> Emitentes { get; set; } = null!;
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

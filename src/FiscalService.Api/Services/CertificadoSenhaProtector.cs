@@ -8,8 +8,9 @@ public sealed class CertificadoSenhaProtector
 {
     private const string MensagemKeyRing =
         "Não foi possível descriptografar a senha do certificado: o key ring do Data Protection mudou " +
-        "(volume /app/keys ausente ou perdido no redeploy). Monte um volume persistente em /app/keys e " +
-        "atualize o emitente com certificadoSenha novamente (PUT/PATCH /api/emitentes/{cnpj}).";
+        "(redeploy com provider diferente ou tabela data_protection_keys ausente/resetada). " +
+        "Atualize o emitente com certificadoSenha novamente (PUT /api/emitentes/{cnpj}) ou use " +
+        "scripts/atualizar-senha-certificado.ps1.";
 
     private readonly IDataProtector _senhaProtector;
     private readonly IDataProtector _cscProtector;

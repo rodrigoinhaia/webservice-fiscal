@@ -22,13 +22,12 @@ services:
       - FISCAL__NFSe__DiretorioSchemas=/app/schemas/nfse
       - FISCAL__DiretorioCertificados=/app/certificados
       - FISCAL__TimeoutWs=${FISCAL_TIMEOUT_WS:-30}
-      - DataProtection__KeysPath=/app/keys
+      - DataProtection__Provider=Database
       - Database__ConnectionString=Host=db;Port=5432;Database=fiscal_db;Username=fiscal_user;Password=${DB_PASSWORD}
     volumes:
       - fiscal_xmls:/app/xmls
       - fiscal_certs:/app/certificados
       - fiscal_logs:/app/logs
-      - fiscal_keys:/app/keys
     depends_on:
       db:
         condition: service_healthy
@@ -63,8 +62,6 @@ volumes:
   fiscal_certs:
     driver: local
   fiscal_logs:
-    driver: local
-  fiscal_keys:
     driver: local
   fiscal_pgdata:
     driver: local
