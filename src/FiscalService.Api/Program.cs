@@ -188,7 +188,14 @@ try
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(connectionString));
 
-    builder.Services.AddDataProtection();
+    // Chaves Data Protection em disco — sem volume /app/keys, senhas de certificado
+    // criptografadas no banco quebram após redeploy (key ring efêmero).
+    var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"]
+        ?? "/app/keys";
+    Directory.CreateDirectory(dataProtectionKeysPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+        .SetApplicationName("FiscalService.Api");
     builder.Services.AddScoped<CertificadoSenhaProtector>();
     builder.Services.AddScoped<EmitenteService>();
 
