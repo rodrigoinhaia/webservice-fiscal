@@ -133,6 +133,11 @@ try
     fiscalConfig.NFSe.DiretorioSchemas = ResolveDiretorioSchemasNfse(fiscalConfig.NFSe.DiretorioSchemas);
 
     builder.Services.AddSingleton(fiscalConfig);
+    Log.Information(
+        "Fiscal SEFAZ: Ambiente={Ambiente} TimeoutWs={TimeoutWs}s ({TimeoutMs}ms no DFe.NET)",
+        fiscalConfig.Ambiente,
+        fiscalConfig.TimeoutWs,
+        fiscalConfig.TimeoutWsMilliseconds);
 
     var rateLimiting = builder.Configuration.GetSection(RateLimitingConfig.SectionName).Get<RateLimitingConfig>()
                        ?? new RateLimitingConfig();
