@@ -10,6 +10,7 @@ using FiscalService.Api.Telemetry;
 using FiscalService.Api.Validation;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Threading.RateLimiting;

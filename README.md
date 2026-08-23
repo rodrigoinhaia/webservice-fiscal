@@ -462,6 +462,7 @@ O `docker-compose.yml` lê o `.env` da raiz e injeta no container (formato ASP.N
 | `DB_PASSWORD` | trecho `Password=` em `Database__ConnectionString` | Senha do Postgres (`Host=db;…`) |
 | `FISCAL_AMBIENTE` | `Fiscal__Ambiente` | `Homologacao` ou `Producao` |
 | `FISCAL_TIMEOUT_WS` | `Fiscal__TimeoutWs` | Timeout SEFAZ (segundos) |
+| `DataProtection__KeysPath` | `DataProtection:KeysPath` | Pasta do key ring (padrão `/app/keys`) |
 | `Fiscal__DiasAlertaCertificado` | idem | Alerta certificado no `/health` |
 | `Fiscal__SefazRetry*` | idem | Retry em falha transitória SEFAZ |
 | `SERVICE_PORT` | mapeamento de porta host | Padrão `5555` |
