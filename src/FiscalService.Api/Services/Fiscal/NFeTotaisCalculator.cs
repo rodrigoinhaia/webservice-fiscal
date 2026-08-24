@@ -26,7 +26,8 @@ public static class NFeTotaisCalculator
         decimal ValorNota,
         decimal FcpUfDest,
         decimal IcmsUfDest,
-        decimal IcmsUfRemet);
+        decimal IcmsUfRemet,
+        decimal TotTrib);
 
     public static TotaisNota Calcular(IReadOnlyList<ItemNFeRequest> itens)
     {
@@ -58,7 +59,8 @@ public static class NFeTotaisCalculator
             ValorNota: produtos - desconto + frete + seguro + outras + ipi + st,
             FcpUfDest: itens.Sum(i => i.ValorFcpUfDest ?? 0),
             IcmsUfDest: itens.Sum(i => i.ValorIcmsUfDest ?? 0),
-            IcmsUfRemet: itens.Sum(i => i.ValorIcmsUfRemet ?? 0));
+            IcmsUfRemet: itens.Sum(i => i.ValorIcmsUfRemet ?? 0),
+            TotTrib: itens.Sum(i => i.ValorAproximadoTributos ?? 0));
     }
 
     public static ICMSTot MontarIcmsTot(TotaisNota t) => new()
@@ -82,7 +84,7 @@ public static class NFeTotaisCalculator
         vCOFINS = t.Cofins,
         vOutro = t.Outras,
         vNF = t.ValorNota,
-        vTotTrib = 0,
+        vTotTrib = t.TotTrib > 0 ? t.TotTrib : 0,
         vFCPUFDest = t.FcpUfDest > 0 ? t.FcpUfDest : null,
         vICMSUFDest = t.IcmsUfDest > 0 ? t.IcmsUfDest : null,
         vICMSUFRemet = t.IcmsUfRemet > 0 ? t.IcmsUfRemet : null

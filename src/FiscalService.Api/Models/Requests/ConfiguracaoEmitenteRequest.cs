@@ -38,4 +38,7 @@ public class ConfiguracaoEmitenteRequest
 
     /// <summary>CSC resolvido do cadastro (ou override) para NFC-e.</summary>
     public string? Csc { get; set; }
+
+    /// <summary>Token De Olho no Imposto (IBPT) — por CNPJ. Override pontual; preferir cadastro do emitente.</summary>
+    public string? IbptToken { get; set; }
 }

@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /app/xmls /app/schemas /app/certificados /app/logs /app/keys
+RUN mkdir -p /app/xmls /app/schemas /app/certificados /app/logs /app/keys /app/ibpt
 
 COPY --from=publish /app/publish .
 

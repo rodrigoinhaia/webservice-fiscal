@@ -85,6 +85,15 @@ public class ItemNFeRequest
 
     public string? InformacaoAdicional { get; set; }
 
+    /// <summary>Exceção NCM (campo EX da tabela IBPT). Default 0.</summary>
+    public int? NcmExcecao { get; set; }
+
+    /// <summary>
+    /// Valor aproximado dos tributos do item (Lei 12.741/2012 / <c>imposto.vTotTrib</c>).
+    /// Se omitido, o webservice calcula via IBPT quando a integração estiver habilitada.
+    /// </summary>
+    public decimal? ValorAproximadoTributos { get; set; }
+
     /// <summary>DIFAL — partilha ICMS para UF destino (informe quando o ERP calcular).</summary>
     public decimal? BaseCalculoUfDest { get; set; }
     public decimal? PercentualFcpUfDest { get; set; }

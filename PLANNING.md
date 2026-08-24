@@ -34,6 +34,7 @@ Publicável em VPS com **Easypanel** (Docker), sem dependência de interface gr�
 | RF20 | Emitir NFS-e Padrão Nacional (DPS → ADN/Sefin) |
 | RF21 | Cancelar NFS-e Nacional (evento ADN) |
 | RF22 | Consultar NFS-e por chave (50 dígitos) e baixar DANFSe (PDF base64) |
+| RF23 | Calcular e informar totais aproximados de tributos (Lei 12.741/2012 / IBPT) em NF-e e NFC-e (`vTotTrib` + `infCpl`) |
 
 ## Requisitos Não-Funcionais (RNF)
 
@@ -71,7 +72,8 @@ Services (orquestra DFe.NET + AppDbContext)
     ├── NFSeService          ← OpenAC (ADN REST, isolado do Zeus)
     ├── DanfeService
     ├── NumeracaoService
-    └── CertificadoService
+    ├── CertificadoService
+    └── IbptTributoService   ← Lei 12.741/2012 (API + tabela local)
     │
     ├── DFe.NET (Zeus.Net.NFe.NFCe, Zeus.Net.CTe, Zeus.Net.MDFe)
     │       └── SEFAZ (SOAP/HTTPS)
@@ -162,6 +164,11 @@ FiscalService/
 - Numeração modelo interno `NS`; chave de log até 50 dígitos
 - Homologação ADN (checklist, sem impacto NF-e)
 
+### Fase 5 — Transparência fiscal (Lei 12.741/2012)
+- Integração IBPT / [De Olho no Imposto](https://deolhonoimposto.ibpt.org.br/) (`vTotTrib` + `infCpl`)
+- Token por emitente + fallback global; tabela CSV como fallback da API
+- Endpoint `GET /api/ibpt/produtos` para ERPs integrados
+
 ---
 
 ## Riscos
@@ -172,7 +179,7 @@ FiscalService/
 | Certificado .pfx expirado | Alto | Validação no upload + alerta no health check |
 | SEFAZ fora do ar | Médio | Timeout configurável + resposta de erro padronizada |
 | Reforma tributária (Split Payment) | Médio | Manter DFe.NET sempre na versão mais recente |
-| GDI+ / System.Drawing no Linux | Alto | NFe.Danfe.Nativo + PdfSharpCore (sem GDI+) |
+| API IBPT indisponível | Médio | Tabela local (`Fiscal:Ibpt:ArquivoTabela`) + cache; emissão segue se `Obrigatorio=false` |
 
 ---
 

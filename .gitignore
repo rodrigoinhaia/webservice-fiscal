@@ -40,6 +40,7 @@ scripts/config/homologacao.env
 scripts/config/producao.env
 docs/exemplos/emitente/cadastro-homologacao.local.json
 
-# OS
-.DS_Store
-Thumbs.db
+# Tabelas IBPT (download do portal — não versionar)
+ibpt/*.csv
+ibpt/*.txt
+ibpt/*.zip

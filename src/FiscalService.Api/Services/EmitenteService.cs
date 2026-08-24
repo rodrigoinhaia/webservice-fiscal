@@ -42,6 +42,7 @@ public sealed class EmitenteService
         var entidade = MapearParaEntidade(new Emitente(), request, cnpj, agora);
         entidade.CertificadoSenhaProtegida = _senhaProtector.Proteger(request.CertificadoSenha);
         AplicarCscCadastro(entidade, request);
+        AplicarIbptCadastro(entidade, request);
 
         _db.Emitentes.Add(entidade);
         await _db.SaveChangesAsync(ct);
@@ -112,6 +113,7 @@ public sealed class EmitenteService
         if (request.Email is not null) entidade.Email = request.Email.Trim();
 
         AplicarCscAtualizacao(entidade, request);
+        AplicarIbptAtualizacao(entidade, request);
 
         if (request.Ativo.HasValue) entidade.Ativo = request.Ativo.Value;
         entidade.AtualizadoEm = DateTime.UtcNow;
@@ -207,6 +209,7 @@ public sealed class EmitenteService
             CertificadoSenha = _senhaProtector.Desproteger(e.CertificadoSenhaProtegida),
             IdCsc = idCsc,
             Csc = csc,
+            IbptToken = ResolverIbptToken(e),
             Endereco = string.IsNullOrWhiteSpace(e.Logradouro) ? null : new EnderecoRequest
             {
                 Logradouro = e.Logradouro,
@@ -269,6 +272,36 @@ public sealed class EmitenteService
                 : _senhaProtector.ProtegerCsc(r.CscProducao.Trim());
     }
 
+    private void AplicarIbptCadastro(Emitente e, EmitenteCadastroRequest r)
+    {
+        if (!string.IsNullOrWhiteSpace(r.IbptToken))
+            e.IbptTokenProtegido = _senhaProtector.ProtegerIbptToken(r.IbptToken.Trim());
+    }
+
+    private void AplicarIbptAtualizacao(Emitente e, EmitenteAtualizarRequest r)
+    {
+        if (r.IbptToken is null)
+            return;
+        e.IbptTokenProtegido = string.IsNullOrWhiteSpace(r.IbptToken)
+            ? null
+            : _senhaProtector.ProtegerIbptToken(r.IbptToken.Trim());
+    }
+
+    private string? ResolverIbptToken(Emitente e)
+    {
+        if (string.IsNullOrWhiteSpace(e.IbptTokenProtegido))
+            return null;
+        try
+        {
+            return _senhaProtector.DesprotegerIbptToken(e.IbptTokenProtegido);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao desproteger token IBPT do emitente {Cnpj}", e.Cnpj);
+            return null;
+        }
+    }
+
     private static void MesclarOverride(ConfiguracaoEmitenteRequest baseConfig, ConfiguracaoEmitenteRequest over, string cnpjEsperado)
     {
         if (!string.IsNullOrWhiteSpace(over.Cnpj) && SomenteDigitos(over.Cnpj) != cnpjEsperado)
@@ -285,6 +318,7 @@ public sealed class EmitenteService
         if (!string.IsNullOrWhiteSpace(over.CertificadoSenha)) baseConfig.CertificadoSenha = over.CertificadoSenha;
         if (!string.IsNullOrWhiteSpace(over.IdCsc)) baseConfig.IdCsc = over.IdCsc;
         if (!string.IsNullOrWhiteSpace(over.Csc)) baseConfig.Csc = over.Csc;
+        if (!string.IsNullOrWhiteSpace(over.IbptToken)) baseConfig.IbptToken = over.IbptToken.Trim();
     }
 
     private static Emitente MapearParaEntidade(Emitente e, EmitenteCadastroRequest r, string cnpj, DateTime agora)
@@ -338,6 +372,7 @@ public sealed class EmitenteService
         PossuiCscHomologacao = !string.IsNullOrWhiteSpace(e.CscHomologacaoProtegido),
         IdCscProducao = e.IdCscProducao,
         PossuiCscProducao = !string.IsNullOrWhiteSpace(e.CscProducaoProtegido),
+        PossuiIbptToken = !string.IsNullOrWhiteSpace(e.IbptTokenProtegido),
         Endereco = string.IsNullOrWhiteSpace(e.Logradouro) ? null : new EnderecoEmitenteResponse
         {
             Logradouro = e.Logradouro,

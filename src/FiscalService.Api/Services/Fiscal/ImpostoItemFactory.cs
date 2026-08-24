@@ -25,6 +25,9 @@ public static class ImpostoItemFactory
     if (difal is not null)
       imp.ICMSUFDest = difal;
 
+    if (item.ValorAproximadoTributos is { } vTot && vTot >= 0)
+      imp.vTotTrib = vTot;
+
     return imp;
   }
 

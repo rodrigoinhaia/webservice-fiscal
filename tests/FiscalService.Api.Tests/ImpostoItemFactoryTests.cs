@@ -105,4 +105,20 @@ public class ImpostoItemFactoryTests
         var imp = ImpostoItemFactory.Criar(item, crt: 3);
         Assert.Null(imp.IPI);
     }
+
+    [Fact]
+    public void Preenche_vTotTrib_quando_informado()
+    {
+        var item = new ItemNFeRequest
+        {
+            OrigemMercadoria = "0",
+            CstIcms = "00",
+            CstPis = "07",
+            CstCofins = "07",
+            ValorAproximadoTributos = 3.21m
+        };
+
+        var imp = ImpostoItemFactory.Criar(item, crt: 3);
+        Assert.Equal(3.21m, imp.vTotTrib);
+    }
 }

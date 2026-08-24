@@ -8,6 +8,7 @@ using FiscalService.Api.Helpers;
 using FiscalService.Api.Models.Requests;
 using FiscalService.Api.Models.Responses;
 using FiscalService.Api.Services.Fiscal;
+using FiscalService.Api.Services.Ibpt;
 using NFe.Classes;
 using NFe.Classes.Informacoes;
 using NFe.Classes.Informacoes.Detalhe;
@@ -42,6 +43,7 @@ public class NFCeService
     private readonly DanfeService _danfeService;
     private readonly NumeracaoService _numeracaoService;
     private readonly EmitenteService _emitenteService;
+    private readonly IbptTributoService _ibptTributoService;
     private readonly ILogger<NFCeService> _logger;
 
     public NFCeService(
@@ -50,6 +52,7 @@ public class NFCeService
         DanfeService danfeService,
         NumeracaoService numeracaoService,
         EmitenteService emitenteService,
+        IbptTributoService ibptTributoService,
         ILogger<NFCeService> logger)
     {
         _globalConfig = globalConfig;
@@ -57,6 +60,7 @@ public class NFCeService
         _danfeService = danfeService;
         _numeracaoService = numeracaoService;
         _emitenteService = emitenteService;
+        _ibptTributoService = ibptTributoService;
         _logger = logger;
     }
 
@@ -75,6 +79,11 @@ public class NFCeService
             NFeEmissaoPreconditions.ValidarEnderecoEmitenteOuLancar(request.ConfiguracaoEmitente);
             ImpostoTributacaoCatalog.ValidarItensOuLancar(request.ConfiguracaoEmitente.Crt, request.Itens);
             NFeTotaisCalculator.ValidarConsistenciaOuLancar(request.Itens);
+
+            var ibpt = await _ibptTributoService.AplicarAsync(
+                request.ConfiguracaoEmitente, request.Itens, request.CalcularIbpt, ct);
+            request.InformacoesAdicionais = IbptTributoCalculator.CombinarInfCpl(
+                request.InformacoesAdicionais, ibpt.InfCpl);
 
             var config = ConstruirConfiguracao(request.ConfiguracaoEmitente);
             var nfce = ConstruirNFCe(request, config);

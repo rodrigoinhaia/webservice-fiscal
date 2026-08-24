@@ -14,11 +14,13 @@ public sealed class CertificadoSenhaProtector
 
     private readonly IDataProtector _senhaProtector;
     private readonly IDataProtector _cscProtector;
+    private readonly IDataProtector _ibptProtector;
 
     public CertificadoSenhaProtector(IDataProtectionProvider provider)
     {
         _senhaProtector = provider.CreateProtector("FiscalService.Emitente.CertificadoSenha.v1");
         _cscProtector = provider.CreateProtector("FiscalService.Emitente.Csc.v1");
+        _ibptProtector = provider.CreateProtector("FiscalService.Emitente.IbptToken.v1");
     }
 
     public string Proteger(string senhaEmTexto) => _senhaProtector.Protect(senhaEmTexto);
@@ -42,6 +44,20 @@ public sealed class CertificadoSenhaProtector
         try
         {
             return _cscProtector.Unprotect(cscProtegido);
+        }
+        catch (CryptographicException ex)
+        {
+            throw new InvalidOperationException(MensagemKeyRing, ex);
+        }
+    }
+
+    public string ProtegerIbptToken(string token) => _ibptProtector.Protect(token);
+
+    public string DesprotegerIbptToken(string tokenProtegido)
+    {
+        try
+        {
+            return _ibptProtector.Unprotect(tokenProtegido);
         }
         catch (CryptographicException ex)
         {

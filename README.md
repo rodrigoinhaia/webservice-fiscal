@@ -10,6 +10,7 @@ Compatível com **Docker/Linux** — sem dependência de Windows ou interface gr
 
 > **Visão completa de capacidades:** [`docs/CAPACIDADES.md`](docs/CAPACIDADES.md)
 > · Plano: [`PLANNING.md`](PLANNING.md) · Status: [`PROGRESS.md`](PROGRESS.md)
+> · IBPT / Lei 12.741/2012: [`docs/IBPT.md`](docs/IBPT.md)
 > · Smoke test: [`docs/SMOKE-HOMOLOGACAO.md`](docs/SMOKE-HOMOLOGACAO.md)
 > · Estratégia DANFE: [`docs/DANFE-ESTRATEGIA.md`](docs/DANFE-ESTRATEGIA.md)
 
@@ -147,6 +148,10 @@ A URL de escuta segue `launchSettings.json` / `ASPNETCORE_URLS` (ex.: `https://l
 | `SERVICE_PORT` | Não | Usada pelo **Docker Compose** para publicar a API (`${SERVICE_PORT:-5555}`). |
 | `FISCAL_AMBIENTE` | Não | Mapeada para `Fiscal__Ambiente` (`Homologacao` ou `Producao`). |
 | `FISCAL_TIMEOUT_WS` | Não | Mapeada para `Fiscal__TimeoutWs` (segundos). |
+| `FISCAL_IBPT_HABILITADO` | Não | Mapeada para `Fiscal__Ibpt__Habilitado` (Lei 12.741/2012). |
+| `FISCAL_IBPT_TOKEN` | Não | Token IBPT global (por CNPJ; preferir `ibptToken` no emitente). Não versione. |
+| `FISCAL_IBPT_ARQUIVO_TABELA` | Não | CSV da tabela IBPT (fallback da API). |
+| `FISCAL_IBPT_UF_TABELA` | Não | UF da tabela local. |
 | `Fiscal__DiasAlertaCertificado` | Não | Alerta de vencimento no `/health` (dias; padrão `30`). |
 | `Fiscal__SefazRetryHabilitado` | Não | Retry em falha transitória SEFAZ (padrão `true`). |
 | `Fiscal__SefazRetryMaxTentativas` | Não | Tentativas incluindo a 1ª (padrão `3`). |
@@ -462,6 +467,8 @@ O `docker-compose.yml` lê o `.env` da raiz e injeta no container (formato ASP.N
 | `DB_PASSWORD` | trecho `Password=` em `Database__ConnectionString` | Senha do Postgres (`Host=db;…`) |
 | `FISCAL_AMBIENTE` | `Fiscal__Ambiente` | `Homologacao` ou `Producao` |
 | `FISCAL_TIMEOUT_WS` | `Fiscal__TimeoutWs` | Timeout SEFAZ em **segundos** (padrão 30 → 30000 ms no Zeus/DFe.NET) |
+| `FISCAL_IBPT_TOKEN` | `Fiscal__Ibpt__Token` | Token IBPT (De Olho no Imposto) — ver `docs/IBPT.md` |
+| `FISCAL_IBPT_ARQUIVO_TABELA` | `Fiscal__Ibpt__ArquivoTabela` | CSV local da tabela de alíquotas |
 | `DataProtection__KeysPath` | `DataProtection:KeysPath` | Pasta do key ring (padrão `/app/keys`) |
 | `Fiscal__DiasAlertaCertificado` | idem | Alerta certificado no `/health` |
 | `Fiscal__SefazRetry*` | idem | Retry em falha transitória SEFAZ |
@@ -478,6 +485,7 @@ Você também pode definir `Database__ConnectionString` completa no compose, se 
 | `fiscal_xmls` | `/app/xmls` | XMLs autorizados (documentos fiscais legais) |
 | `fiscal_certs` | `/app/certificados` | Certificados .pfx |
 | `fiscal_logs` | `/app/logs` | Logs rotativos do Serilog |
+| `fiscal_ibpt` | `/app/ibpt` | Tabela CSV IBPT (Lei 12.741/2012) |
 | `fiscal_keys` | `/app/keys` | Chaves ASP.NET Data Protection (senhas de certificado no banco) |
 | `fiscal_pgdata` | `/var/lib/postgresql/data` | Dados do PostgreSQL |
 

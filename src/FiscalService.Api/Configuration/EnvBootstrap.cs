@@ -76,6 +76,34 @@ public static class EnvBootstrap
                 Environment.SetEnvironmentVariable("Fiscal__TimeoutWs", tw);
         }
 
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Fiscal__Ibpt__Token")))
+        {
+            var tok = Environment.GetEnvironmentVariable("FISCAL_IBPT_TOKEN");
+            if (!string.IsNullOrWhiteSpace(tok))
+                Environment.SetEnvironmentVariable("Fiscal__Ibpt__Token", tok);
+        }
+
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Fiscal__Ibpt__Habilitado")))
+        {
+            var hab = Environment.GetEnvironmentVariable("FISCAL_IBPT_HABILITADO");
+            if (!string.IsNullOrWhiteSpace(hab))
+                Environment.SetEnvironmentVariable("Fiscal__Ibpt__Habilitado", hab);
+        }
+
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Fiscal__Ibpt__ArquivoTabela")))
+        {
+            var tab = Environment.GetEnvironmentVariable("FISCAL_IBPT_ARQUIVO_TABELA");
+            if (!string.IsNullOrWhiteSpace(tab))
+                Environment.SetEnvironmentVariable("Fiscal__Ibpt__ArquivoTabela", tab);
+        }
+
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Fiscal__Ibpt__UfTabela")))
+        {
+            var ufTab = Environment.GetEnvironmentVariable("FISCAL_IBPT_UF_TABELA");
+            if (!string.IsNullOrWhiteSpace(ufTab))
+                Environment.SetEnvironmentVariable("Fiscal__Ibpt__UfTabela", ufTab);
+        }
+
         if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Database__ConnectionString")))
             return;
 

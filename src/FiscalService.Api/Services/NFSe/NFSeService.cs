@@ -178,23 +178,44 @@ public sealed class NFSeService
             var retorno = await SefazRetry.ExecuteAsync(_fiscalConfig, _logger, "NFSeConsultaChave", () =>
                 openAc.ConsultaChaveAsync(request.ChaveAcesso));
 
+            var resultado = retorno.Resultado;
+            if (resultado is not null)
+            {
+                var status = resultado.StatusProcessamento;
+                if (status == StatusProcessamentoDistribuicao.DOCUMENTOS_LOCALIZADOS)
+                {
+                    var doc = resultado.Lote?.FirstOrDefault(d =>
+                        string.Equals(d.ChaveAcesso, request.ChaveAcesso, StringComparison.Ordinal));
+                    return FiscalResponse.Ok(
+                        doc?.ChaveAcesso ?? request.ChaveAcesso,
+                        doc?.NSU.ToString() ?? string.Empty,
+                        status.ToString(),
+                        NFSeOpenAcResponseHelper.FormatarSucesso(status.ToString(), resultado.Alertas),
+                        xml: doc?.ArquivoXml);
+                }
+
+                var detalheStatus = status switch
+                {
+                    StatusProcessamentoDistribuicao.NENHUM_DOCUMENTO_LOCALIZADO =>
+                        "Nenhum DF-e localizado para a chave (ADN pode atrasar alguns segundos após a autorização).",
+                    StatusProcessamentoDistribuicao.REJEICAO =>
+                        NFSeOpenAcResponseHelper.FormatarErros(resultado.Erros),
+                    _ => status.ToString()
+                };
+
+                return FiscalResponse.Falha("ConsultaNfseNacional", detalheStatus,
+                    xmlRetorno: retorno.XmlRetorno);
+            }
+
             if (!retorno.Sucesso)
             {
-                var erros = NFSeOpenAcResponseHelper.FormatarErros(retorno.Resultado?.Erros);
+                var erros = NFSeOpenAcResponseHelper.FormatarErros(null);
                 return FiscalResponse.Falha("ConsultaNfseNacional", erros,
                     xmlRetorno: retorno.XmlRetorno);
             }
 
-            var resultado = retorno.Resultado!;
-            var situacao = resultado.StatusProcessamento.ToString();
-            var doc = resultado.Lote?.FirstOrDefault(d =>
-                string.Equals(d.ChaveAcesso, request.ChaveAcesso, StringComparison.Ordinal));
-            return FiscalResponse.Ok(
-                doc?.ChaveAcesso ?? request.ChaveAcesso,
-                doc?.NSU.ToString() ?? string.Empty,
-                situacao,
-                NFSeOpenAcResponseHelper.FormatarSucesso(situacao, resultado.Alertas),
-                xml: doc?.ArquivoXml);
+            return FiscalResponse.Falha("ConsultaNfseNacional", "Retorno de consulta sem resultado.",
+                xmlRetorno: retorno.XmlRetorno);
         }
         catch (Exception ex)
         {

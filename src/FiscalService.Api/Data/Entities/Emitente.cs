@@ -106,6 +106,10 @@ public class Emitente
     [Column("csc_producao_protegido")]
     public string? CscProducaoProtegido { get; set; }
 
+    /// <summary>Token API IBPT (De Olho no Imposto), protegido via Data Protection.</summary>
+    [Column("ibpt_token_protegido")]
+    public string? IbptTokenProtegido { get; set; }
+
     [Column("ativo")]
     public bool Ativo { get; set; } = true;
 

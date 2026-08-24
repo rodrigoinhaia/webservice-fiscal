@@ -27,4 +27,7 @@ public class EmitenteAtualizarRequest
 
     /// <summary>CSC produção. Null = não altera; string vazia = remove.</summary>
     public string? CscProducao { get; set; }
+
+    /// <summary>Token IBPT. Null = não altera; string vazia = remove.</summary>
+    public string? IbptToken { get; set; }
 }

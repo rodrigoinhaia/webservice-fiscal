@@ -44,4 +44,7 @@ public class EmitenteCadastroRequest
 
     /// <summary>Se true, valida se o CNPJ do certificado coincide com o CNPJ cadastrado.</summary>
     public bool ValidarCnpjCertificado { get; set; } = true;
+
+    /// <summary>Token da API De Olho no Imposto (por CNPJ). Armazenado protegido.</summary>
+    public string? IbptToken { get; set; }
 }

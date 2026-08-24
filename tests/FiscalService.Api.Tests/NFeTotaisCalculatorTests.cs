@@ -38,6 +38,19 @@ public class NFeTotaisCalculatorTests
     }
 
     [Fact]
+    public void Agrega_vTotTrib_dos_itens()
+    {
+        var itens = new List<ItemNFeRequest>
+        {
+            new() { QuantidadeComercial = 1, ValorUnitarioComercial = 10, ValorTotalBruto = 10, ValorAproximadoTributos = 2.50m },
+            new() { QuantidadeComercial = 1, ValorUnitarioComercial = 20, ValorTotalBruto = 20, ValorAproximadoTributos = 4.10m }
+        };
+
+        var icms = NFeTotaisCalculator.MontarIcmsTot(NFeTotaisCalculator.Calcular(itens));
+        Assert.Equal(6.60m, icms.vTotTrib);
+    }
+
+    [Fact]
     public void Rejeita_valor_bruto_inconsistente()
     {
         var itens = new List<ItemNFeRequest>

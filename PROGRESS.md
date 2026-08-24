@@ -19,7 +19,7 @@
 | Métrica | Status | Detalhe |
 |---------|--------|---------|
 | Build local | 🟢 | `dotnet build` Release |
-| Testes unitários | 🟢 | **134+** testes (xUnit) |
+| Testes unitários | 🟢 | **158** testes (xUnit) |
 | Testes de integração | 🟡 | Testcontainers — EF 8.0.27 alinhado |
 | CI (GitHub Actions) | 🟢 | build + test + docker |
 | Homologação NF-e | 🔴 | Checklist pronto; execução pendente |
@@ -29,6 +29,7 @@
 
 ## Entregas recentes (2026-08)
 
+- [x] **IBPT / Lei 12.741/2012** — `vTotTrib` + `infCpl` na NF-e/NFC-e, API De Olho no Imposto + tabela local, token por emitente
 - [x] **Módulo NFS-e Padrão Nacional** — `OpenAC.Net.NFSe.Nacional` 1.5.0, `/api/nfse`, schemas `Schemas/NFSe/`
 - [x] Emitente: `inscricaoMunicipal`, `email`; migration chave 50 / série 5
 - [x] Testes mapper/validator NFS-e; exemplos `docs/exemplos/nfse/`
@@ -59,6 +60,7 @@
 - [ ] CT-e ICMS configurável; MDF-e modais 02–04
 - [ ] Homologação NFS-e Nacional (ADN) com evidências
 - [ ] ISSQN na **NF-e** (grupo item — distinto deste módulo NFS-e)
+- [ ] Importar tabela IBPT vigente da UF enquanto a API De Olho no Imposto estiver intermitente
 
 ### Qualidade
 

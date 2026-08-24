@@ -32,6 +32,12 @@ public class NFeEmitirRequest : IEmitenteConfigSource
 
     public string? InformacoesAdicionais { get; set; }
 
+    /// <summary>
+    /// Calcula tributos aproximados (IBPT / Lei 12.741/2012) e preenche <c>vTotTrib</c> + <c>infCpl</c>.
+    /// Null = usa <c>Fiscal:Ibpt:Habilitado</c>.
+    /// </summary>
+    public bool? CalcularIbpt { get; set; }
+
     /// <summary>Modalidade de frete: 0=Por conta do emitente, 1=Por conta do destinatário, etc.</summary>
     public int ModalidadeFrete { get; set; } = 1;
 

@@ -22,6 +22,9 @@ public class EmitenteResponse
     public bool PossuiCscHomologacao { get; set; }
     public string? IdCscProducao { get; set; }
     public bool PossuiCscProducao { get; set; }
+
+    /// <summary>True quando o emitente tem token IBPT cadastrado (o valor não é exposto).</summary>
+    public bool PossuiIbptToken { get; set; }
 }
 
 public class EnderecoEmitenteResponse

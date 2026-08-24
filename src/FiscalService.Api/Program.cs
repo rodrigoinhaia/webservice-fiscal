@@ -3,6 +3,7 @@ using FiscalService.Api.Configuration;
 using FiscalService.Api.Data;
 using FiscalService.Api.Middlewares;
 using FiscalService.Api.Services;
+using FiscalService.Api.Services.Ibpt;
 using FiscalService.Api.Services.NFSe;
 using FiscalService.Api.HealthChecks;
 using FiscalService.Api.Swagger;
@@ -213,6 +214,24 @@ try
     }
     builder.Services.AddScoped<CertificadoSenhaProtector>();
     builder.Services.AddScoped<EmitenteService>();
+
+    builder.Services.AddMemoryCache();
+    builder.Services.AddHttpClient<IbptApiClient>((sp, client) =>
+    {
+        var timeout = sp.GetRequiredService<FiscalConfig>().Ibpt.TimeoutSegundos;
+        client.Timeout = TimeSpan.FromSeconds(Math.Clamp(timeout, 2, 60));
+        client.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/json");
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "FiscalService/IBPT");
+    });
+    builder.Services.AddSingleton<IbptTabelaArquivoStore>();
+    builder.Services.AddScoped<IIbptAliquotaLookup, IbptAliquotaLookup>();
+    builder.Services.AddScoped<IbptTributoService>();
+    Log.Information(
+        "IBPT: Habilitado={Habilitado} TokenGlobal={Token} Tabela={Tabela} InfCpl={InfCpl}",
+        fiscalConfig.Ibpt.Habilitado,
+        !string.IsNullOrWhiteSpace(fiscalConfig.Ibpt.Token),
+        string.IsNullOrWhiteSpace(fiscalConfig.Ibpt.ArquivoTabela) ? "(nao configurada)" : fiscalConfig.Ibpt.ArquivoTabela,
+        fiscalConfig.Ibpt.IncluirInfCpl);
 
     // ── Health Checks ────────────────────────────────────────────────────────
     builder.Services.AddHealthChecks()

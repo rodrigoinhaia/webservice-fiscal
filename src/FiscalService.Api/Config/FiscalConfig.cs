@@ -47,6 +47,9 @@ public sealed class FiscalConfig
     /// <summary>Configuração do módulo NFS-e Padrão Nacional.</summary>
     public NfseConfig NFSe { get; set; } = new();
 
+    /// <summary>Lei 12.741/2012 — De Olho no Imposto (IBPT).</summary>
+    public IbptConfig Ibpt { get; set; } = new();
+
     /// <summary>Resolve um path de certificado relativo para absoluto.</summary>
     public string ResolveCertificadoPath(string path)
     {

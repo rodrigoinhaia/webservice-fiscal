@@ -246,8 +246,9 @@ function Get-Prop {
 }
 
 function Test-RespostaAutorizada {
-    param($Resp)
-    return ($Resp -and (Get-Prop $Resp "sucesso") -eq $true -and (Get-Prop $Resp "codigoStatus") -eq "100")
+    param($Resp, [string[]] $CodigosOk = @("100"))
+    $cStat = [string](Get-Prop $Resp "codigoStatus")
+    return ($Resp -and (Get-Prop $Resp "sucesso") -eq $true -and ($CodigosOk -contains $cStat))
 }
 
 function Test-CicloEmitirCancelar {
@@ -281,8 +282,20 @@ function Test-CicloEmitirCancelar {
 
     if ($PathConsultar -and $MontarConsulta) {
         $consBody = & $MontarConsulta $chave
-        $consResp = Invoke-FiscalApi -Method POST -Path $PathConsultar -Body $consBody
-        $okCons = (Get-Prop $consResp "sucesso") -eq $true
+        $consResp = $null
+        $okCons = $false
+        # ADN/distribuição DF-e pode atrasar alguns segundos após autorização
+        for ($tentativa = 1; $tentativa -le 5; $tentativa++) {
+            if ($tentativa -gt 1) { Start-Sleep -Seconds 3 }
+            $consResp = Invoke-FiscalApi -Method POST -Path $PathConsultar -Body $consBody
+            $cStatCons = [string](Get-Prop $consResp "codigoStatus")
+            $okCons = ((Get-Prop $consResp "sucesso") -eq $true) -or ($cStatCons -eq "DOCUMENTOS_LOCALIZADOS")
+            if ($okCons) { break }
+            $msgCons = Get-Prop (Get-Prop $consResp "erro") "mensagem"
+            if ($msgCons -and $msgCons -notmatch "Nenhum DF-e localizado|sem detalhes|DOCUMENTOS") {
+                break
+            }
+        }
         Write-SmokeLog -Step "$NomeModelo consultar" -Status $(if ($okCons) { "OK" } else { "FAIL" }) `
             -Detail "cStat=$(Get-Prop $consResp 'codigoStatus')" -Data $consResp
     }
@@ -291,7 +304,8 @@ function Test-CicloEmitirCancelar {
 
     $cancelBody = & $MontarCancelamento $chave $protocolo
     $cancelResp = Invoke-FiscalApi -Method POST -Path "/api/$($NomeModelo.ToLower())/cancelar" -Body $cancelBody
-    if (Test-RespostaAutorizada $cancelResp) {
+    # NF-e/NFC-e/NFS-e: cancelamento homologado costuma retornar cStat 135
+    if (Test-RespostaAutorizada $cancelResp -CodigosOk @("100", "135")) {
         Write-SmokeLog -Step "$NomeModelo cancelar" -Status "OK" -Detail "cStat=$(Get-Prop $cancelResp 'codigoStatus')" -Data $cancelResp
     }
     else {

@@ -245,7 +245,19 @@ Cadastro persistente de emitentes com certificado A1 (senha criptografada via **
 | PUT | `/api/emitentes/{cnpj}` | Atualiza dados/certificado |
 | DELETE | `/api/emitentes/{cnpj}` | Desativa (soft delete) |
 
-Emissão e eventos NF-e/NFC-e aceitam **`emitenteCnpj`** no body em vez de repetir `configuracaoEmitente` + senha do PFX (`IEmitenteConfigSource` → `EmitenteService.ResolverConfiguracaoAsync`).
+Emissão e eventos NF-e/NFC-e aceitam **`emitenteCnpj`** no body em vez de repetir `configuracaoEmitente` + senha do PFX (`IEmitenteConfigSource` → `EmitenteService.ResolverConfiguracaoAsync`). Token IBPT (`ibptToken`) é opcional no cadastro (armazenado protegido).
+
+### 4.10.1 IBPT / Lei 12.741/2012 — `IbptController` (`/api/ibpt`)
+
+Totais aproximados de tributos (NT 2013.003): `imposto.vTotTrib` no item, `ICMSTot.vTotTrib` no total e texto em `infCpl` no DANFE/NFC-e.
+
+| Método | Rota | Operação |
+|---|---|---|
+| GET | `/api/ibpt/status` | Habilitação, token global (sim/não), tabela local |
+| GET | `/api/ibpt/produtos` | Consulta NCM (query: `ncm`, `uf`, `valor`, `cnpj`, `ex`, `origemMercadoria`) |
+| POST | `/api/ibpt/tabela/recarregar` | Relê o CSV em `Fiscal:Ibpt:ArquivoTabela` |
+
+Emissão NF-e/NFC-e calcula automaticamente quando `Fiscal:Ibpt:Habilitado=true` (override: `calcularIbpt` no body). Ver `docs/IBPT.md`.
 
 ### 4.11 Saúde — Endpoint global
 
@@ -299,7 +311,8 @@ Endpoints fiscais implementam `IEmitenteConfigSource`:
 | `destinatario` | — | `DestinatarioRequest` (CNPJ ou CPF, IE, indicador IE) |
 | `itens` | [] | Lista de `ItemNFeRequest` (não vazia) |
 | `pagamentos` | [] | Lista de `PagamentoRequest` |
-| `informacoesAdicionais` | null | Texto livre (`infCpl`) |
+| `informacoesAdicionais` | null | Texto livre (`infCpl`). O webservice **anexa** o texto da Lei 12.741/2012 quando o IBPT estiver habilitado |
+| `calcularIbpt` | null | `true`/`false`; null usa `Fiscal:Ibpt:Habilitado` |
 | `tipoEmissao` | `Normal` | `Normal` · `SVC-AN` · `SVC-RS` · `Offline` |
 | `dataHoraContingencia` | — | Obrigatório em contingência (exceto quando omitido → usa dhEmi) |
 | `justificativaContingencia` | — | ≥15 caracteres em contingência |
@@ -367,6 +380,7 @@ Cobre **NF-e e NFC-e**. Campos essenciais:
 - ICMS: `cstIcms` ou `csosnIcms`, `origemMercadoria`, base, alíquota, valor; CST 00/10/20/30/40/41/50/51/60/70/90 (CRT 3); CSOSN 101–103, 201–203, 500, 900 (CRT 1/2); ST, diferimento (51), desoneração.
 - PIS / COFINS: CST `01`/`02` → alíquota; `03` → quantidade (`PISQtde`/`COFINSQtde`); `04`–`09` → NT; `49`/`99` → outros; default `07`.
 - IPI: CST tributado (`IPITrib`) ou não tributado (`IPINT`).
+- IBPT: `ncmExcecao` (EX da tabela), `valorAproximadoTributos` (opcional; se omitido o webservice calcula).
 - DIFAL: `baseCalculoUfDest`, percentuais e valores UF destino/remetente → `ICMSUFDest`.
 - Outros: `valorDesconto`, `valorFrete`, `valorSeguro`, `valorOutrasDespesas`, `informacaoAdicional`.
 
@@ -752,6 +766,10 @@ Antes do `WebApplication.CreateBuilder`:
    - `API_KEY_PREVIOUS` → mesclada em `ApiKey`
    - `FISCAL_AMBIENTE` → `Fiscal__Ambiente`
    - `FISCAL_TIMEOUT_WS` → `Fiscal__TimeoutWs`
+   - `FISCAL_IBPT_TOKEN` → `Fiscal__Ibpt__Token`
+   - `FISCAL_IBPT_HABILITADO` → `Fiscal__Ibpt__Habilitado`
+   - `FISCAL_IBPT_ARQUIVO_TABELA` → `Fiscal__Ibpt__ArquivoTabela`
+   - `FISCAL_IBPT_UF_TABELA` → `Fiscal__Ibpt__UfTabela`
 4. Constrói `Database__ConnectionString` quando ausente:
    - Prioridade 1: `DATABASE_URL` (URI `postgres://`/`postgresql://` → Npgsql).
    - Prioridade 2: `DB_PASSWORD` se for URI Postgres (legado).
@@ -766,7 +784,7 @@ Antes do `WebApplication.CreateBuilder`:
 | `ApiKey` | string | Chave(s) válida(s) (ver `ApiKeyRing`) |
 | `RateLimiting` | `RateLimitingConfig` | `Enabled`, `PermitLimit`, `WindowSeconds` |
 | `OpenTelemetry` | `OpenTelemetryConfig` | `Enabled`, `OtlpEndpoint` |
-| `Fiscal` | `FiscalConfig` | `Ambiente`, `SalvarXmls`, diretórios, `TimeoutWs`, `DiasAlertaCertificado`, `SefazRetryHabilitado`, `SefazRetryMaxTentativas`, `SefazRetryIntervaloMs` |
+| `Fiscal` | `FiscalConfig` | `Ambiente`, `SalvarXmls`, diretórios, `TimeoutWs`, `DiasAlertaCertificado`, `SefazRetry*`, `Ibpt` (`IbptConfig`) |
 | `Database` | string | `ConnectionString` Npgsql |
 | `Serilog` | nativo | `MinimumLevel`, `WriteTo`, `File`, `Enrich` |
 
@@ -785,6 +803,10 @@ Antes do `WebApplication.CreateBuilder`:
 | `Fiscal__SefazRetryHabilitado` | Retry em falha transitória SEFAZ | `true` |
 | `Fiscal__SefazRetryMaxTentativas` | Tentativas (inclui a 1ª) | `3` |
 | `Fiscal__SefazRetryIntervaloMs` | Backoff base entre tentativas | `1000` |
+| `FISCAL_IBPT_HABILITADO` / `Fiscal__Ibpt__Habilitado` | Liga Lei 12.741/2012 na emissão | `true` |
+| `FISCAL_IBPT_TOKEN` / `Fiscal__Ibpt__Token` | Token global IBPT (por CNPJ; preferir cadastro do emitente) | — |
+| `FISCAL_IBPT_ARQUIVO_TABELA` | CSV da tabela IBPT (fallback da API) | `/app/ibpt/TabelaIBPTax.csv` no Docker |
+| `FISCAL_IBPT_UF_TABELA` | UF da tabela local | — |
 | `RateLimiting__Enabled` | Liga rate limit | `true` |
 | `RateLimiting__PermitLimit` | Permits/janela | `180` |
 | `RateLimiting__WindowSeconds` | Janela (s) | `60` |

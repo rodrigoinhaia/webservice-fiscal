@@ -29,4 +29,10 @@ public class NFCeEmitirRequest : IEmitenteConfigSource
     public string QrCodeVersao { get; set; } = "2";
 
     public string? InformacoesAdicionais { get; set; }
+
+    /// <summary>
+    /// Calcula tributos aproximados (IBPT / Lei 12.741/2012) e preenche <c>vTotTrib</c> + <c>infCpl</c>.
+    /// Null = usa <c>Fiscal:Ibpt:Habilitado</c>. NFC-e (consumidor) deve preferir sempre true.
+    /// </summary>
+    public bool? CalcularIbpt { get; set; }
 }
