@@ -73,4 +73,14 @@ public class EmitentesController : ControllerBase
         var ok = await _emitenteService.DesativarAsync(cnpj, ct);
         return ok ? Ok(new { sucesso = true, mensagem = "Emitente desativado." }) : NotFound();
     }
+
+    /// <summary>Cadastra ou remove o token IBPT (De Olho no Imposto) do emitente. String vazia remove.</summary>
+    [HttpPut("{cnpj}/ibpt")]
+    public async Task<IActionResult> AtualizarIbpt(string cnpj, [FromBody] EmitenteIbptTokenRequest request, CancellationToken ct)
+    {
+        var resultado = await _emitenteService.AtualizarIbptTokenAsync(cnpj, request.IbptToken, ct);
+        return resultado is null
+            ? NotFound()
+            : Ok(new { sucesso = true, cnpj = resultado.Cnpj, possuiIbptToken = resultado.PossuiIbptToken });
+    }
 }

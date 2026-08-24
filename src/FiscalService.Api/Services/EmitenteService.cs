@@ -123,6 +123,15 @@ public sealed class EmitenteService
         return MapearParaResponse(entidade);
     }
 
+    public async Task<EmitenteResponse?> AtualizarIbptTokenAsync(string cnpj, string? token, CancellationToken ct = default)
+    {
+        return await AtualizarAsync(cnpj, new EmitenteAtualizarRequest
+        {
+            IbptToken = token ?? "",
+            ValidarCnpjCertificado = false
+        }, ct);
+    }
+
     public async Task<bool> DesativarAsync(string cnpj, CancellationToken ct = default)
     {
         var digits = SomenteDigitos(cnpj);

@@ -232,3 +232,49 @@ public class IbptApiClientTests
         }
     }
 }
+
+public class IbptTabelaArquivoStoreTests
+{
+    [Fact]
+    public void Importar_grava_csv_e_permite_busca_por_ncm()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "ibpt-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var cfg = new FiscalConfig
+            {
+                Ibpt = new IbptConfig { Diretorio = dir, Habilitado = true }
+            };
+            var store = new IbptTabelaArquivoStore(cfg, new IbptCacheStamp(), NullLogger<IbptTabelaArquivoStore>.Instance);
+            const string csv =
+                "codigo;ex;tipo;descricao;nacionalfederal;importadosfederal;estadual;municipal;vigenciainicio;vigenciafim;chave;versao;fonte\n" +
+                "19059090;0;0;PAO;13,45;18,00;18,00;0,00;20/08/2026;30/09/2026;ABC;26.2.A;IBPT\n";
+
+            using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(csv));
+            var r = store.Importar(stream, "RS");
+
+            Assert.True(r.Sucesso);
+            Assert.Equal(1, r.Registros);
+            Assert.Equal("26.2.A", r.Versao);
+            var aliq = store.Buscar("19059090", "RS", 0);
+            Assert.NotNull(aliq);
+            Assert.Equal(13.45m, aliq!.Nacional);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, true); } catch { /* temp */ }
+        }
+    }
+
+    [Fact]
+    public void Importar_rejeita_arquivo_sem_ncm()
+    {
+        var cfg = new FiscalConfig { Ibpt = new IbptConfig { Diretorio = Path.GetTempPath() } };
+        var store = new IbptTabelaArquivoStore(cfg, new IbptCacheStamp(), NullLogger<IbptTabelaArquivoStore>.Instance);
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("nao e csv"));
+        var r = store.Importar(stream, "RS");
+        Assert.False(r.Sucesso);
+        Assert.Equal(0, r.Registros);
+    }
+}

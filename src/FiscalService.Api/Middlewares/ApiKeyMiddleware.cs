@@ -19,8 +19,10 @@ public sealed class ApiKeyMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // Permite health check sem autenticação
-        if (context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
+        // Painel operacional e Swagger (UI) — as chamadas /api/* continuam exigindo X-Api-Key
+        if (context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
+            || context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase)
+            || context.Request.Path.StartsWithSegments("/painel", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);
             return;

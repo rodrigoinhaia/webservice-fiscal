@@ -43,8 +43,8 @@ public class IbptController : ControllerBase
             UrlProdutos = _config.Ibpt.UrlProdutos,
             IncluirInfCpl = _config.Ibpt.IncluirInfCpl,
             Obrigatorio = _config.Ibpt.Obrigatorio,
-            Observacao = "Token é por CNPJ. Cadastre em PUT /api/emitentes/{cnpj} (ibptToken) " +
-                         "ou use Fiscal__Ibpt__Token. A API oficial pode ficar indisponível — use a tabela local."
+            Observacao = "Token é por CNPJ. Use o painel /painel, PUT /api/emitentes/{cnpj}/ibpt ou Fiscal__Ibpt__Token. " +
+                         "A API oficial pode ficar indisponível — faça upload da tabela CSV no painel."
         });
     }
 
@@ -127,7 +127,69 @@ public class IbptController : ControllerBase
         });
     }
 
-    /// <summary>Relê a tabela CSV/TXT configurada em <c>Fiscal:Ibpt:ArquivoTabela</c>.</summary>
+    /// <summary>
+    /// Upload da tabela CSV/TXT do portal De Olho no Imposto (multipart).
+    /// Campos: <c>arquivo</c> (.csv/.txt), opcional <c>uf</c> (2 letras, ex. RS).
+    /// </summary>
+    [HttpPost("tabela")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(30 * 1024 * 1024)]
+    public async Task<IActionResult> UploadTabela(
+        IFormFile? arquivo,
+        [FromForm] string? uf,
+        CancellationToken cancellationToken)
+    {
+        if (arquivo is null || arquivo.Length == 0)
+        {
+            return BadRequest(new
+            {
+                sucesso = false,
+                erro = new { tipo = "Validacao", mensagem = "Envie o campo \"arquivo\" com o CSV/TXT baixado no portal IBPT." }
+            });
+        }
+
+        var ext = Path.GetExtension(arquivo.FileName ?? "").ToLowerInvariant();
+        if (ext is not (".csv" or ".txt" or ".tsv" or ""))
+        {
+            return BadRequest(new
+            {
+                sucesso = false,
+                erro = new { tipo = "Validacao", mensagem = "Envie um arquivo .csv ou .txt da tabela IBPT." }
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(uf) && uf.Trim().Length != 2)
+        {
+            return BadRequest(new
+            {
+                sucesso = false,
+                erro = new { tipo = "Validacao", mensagem = "UF deve ter 2 letras (ex.: RS)." }
+            });
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        await using var stream = arquivo.OpenReadStream();
+        var r = _tabela.Importar(stream, uf);
+        if (!r.Sucesso)
+            return UnprocessableEntity(new IbptTabelaUploadResponse
+            {
+                Sucesso = false,
+                Mensagem = r.Mensagem
+            });
+
+        return Ok(new IbptTabelaUploadResponse
+        {
+            Sucesso = true,
+            Registros = r.Registros,
+            Caminho = r.Caminho,
+            Uf = r.Uf,
+            Versao = r.Versao,
+            Fonte = r.Fonte,
+            Mensagem = r.Mensagem
+        });
+    }
+
+    /// <summary>Relê a tabela CSV/TXT já gravada em disco.</summary>
     [HttpPost("tabela/recarregar")]
     public IActionResult RecarregarTabela()
     {

@@ -243,6 +243,7 @@ Cadastro persistente de emitentes com certificado A1 (senha criptografada via **
 | GET | `/api/emitentes/{cnpj}` | Consulta por CNPJ (14 dígitos) |
 | GET | `/api/emitentes` | Lista paginada (`pagina`, `tamanhoPagina`, `ativo`) |
 | PUT | `/api/emitentes/{cnpj}` | Atualiza dados/certificado |
+| PUT | `/api/emitentes/{cnpj}/ibpt` | Token IBPT (De Olho no Imposto) |
 | DELETE | `/api/emitentes/{cnpj}` | Desativa (soft delete) |
 
 Emissão e eventos NF-e/NFC-e aceitam **`emitenteCnpj`** no body em vez de repetir `configuracaoEmitente` + senha do PFX (`IEmitenteConfigSource` → `EmitenteService.ResolverConfiguracaoAsync`). Token IBPT (`ibptToken`) é opcional no cadastro (armazenado protegido).
@@ -255,7 +256,10 @@ Totais aproximados de tributos (NT 2013.003): `imposto.vTotTrib` no item, `ICMST
 |---|---|---|
 | GET | `/api/ibpt/status` | Habilitação, token global (sim/não), tabela local |
 | GET | `/api/ibpt/produtos` | Consulta NCM (query: `ncm`, `uf`, `valor`, `cnpj`, `ex`, `origemMercadoria`) |
-| POST | `/api/ibpt/tabela/recarregar` | Relê o CSV em `Fiscal:Ibpt:ArquivoTabela` |
+| POST | `/api/ibpt/tabela` | Upload multipart da planilha CSV/TXT (`arquivo`, `uf`) |
+| POST | `/api/ibpt/tabela/recarregar` | Relê o CSV já gravado em disco |
+| PUT | `/api/emitentes/{cnpj}/ibpt` | Cadastra/remove token IBPT do emitente |
+| GET | `/painel` | Painel HTML (token + upload da tabela) |
 
 Emissão NF-e/NFC-e calcula automaticamente quando `Fiscal:Ibpt:Habilitado=true` (override: `calcularIbpt` no body). Ver `docs/IBPT.md`.
 
@@ -267,7 +271,7 @@ Emissão NF-e/NFC-e calcula automaticamente quando `Fiscal:Ibpt:Habilitado=true`
 
 ### 4.12 Documentação interativa
 
-- **Swagger UI** em `/swagger` no ambiente `Development` — inclui:
+- **Swagger UI** em `/swagger` (todos os ambientes) — inclui:
   - Definição de segurança `ApiKey` no header `X-Api-Key`.
   - Filtro `OpenApiCommonResponsesOperationFilter` que documenta respostas
     `400`, `401`, `422` e `429` em todas as operações.

@@ -13,6 +13,17 @@ public sealed class IbptStatusResponse
     public string Observacao { get; init; } = string.Empty;
 }
 
+public sealed class IbptTabelaUploadResponse
+{
+    public bool Sucesso { get; init; }
+    public int Registros { get; init; }
+    public string? Caminho { get; init; }
+    public string? Uf { get; init; }
+    public string? Versao { get; init; }
+    public string? Fonte { get; init; }
+    public string? Mensagem { get; init; }
+}
+
 public sealed class IbptConsultaResponse
 {
     public bool Encontrado { get; init; }

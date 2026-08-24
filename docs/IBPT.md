@@ -37,6 +37,15 @@ O portal já avisou indisponibilidade da API sem previsão. **Mantenha a tabela 
 
 Não versionamos a tabela (arquivo grande e de uso restrito ao CNPJ cadastrado). Coloque o CSV em `ibpt/TabelaIBPTax.csv` (gitignored) ou no volume Docker `/app/ibpt`.
 
+## Painel operacional
+
+Abra **`/painel`** no FiscalService (produção ou local). Informe a API Key e:
+
+1. Selecione o emitente e cole o token do portal → Salvar token (`PUT /api/emitentes/{cnpj}/ibpt`).
+2. Envie o CSV da UF baixado no portal → Enviar e ativar (`POST /api/ibpt/tabela`).
+
+Swagger (todas as operações) fica em `/swagger`. As rotas `/api/*` continuam exigindo `X-Api-Key`.
+
 ## Token (por CNPJ)
 
 O token é **da empresa no portal IBPT**, não é genérico. Cada CNPJ integrador deve:
@@ -50,11 +59,22 @@ Prioridade: `configuracaoEmitente.ibptToken` → token salvo no emitente → `Fi
 O valor **não** é devolvido na API (`possuiIbptToken: true|false`).
 
 ```http
-PUT /api/emitentes/{cnpj}
+PUT /api/emitentes/{cnpj}/ibpt
 Content-Type: application/json
 X-Api-Key: ...
 
 { "ibptToken": "cole-o-token-do-portal" }
+```
+
+Upload da tabela:
+
+```http
+POST /api/ibpt/tabela
+Content-Type: multipart/form-data
+X-Api-Key: ...
+
+arquivo: TabelaIBPTaxRS.csv
+uf: RS
 ```
 
 ## Integração pelos ERPs (Diin Gestor e outros)

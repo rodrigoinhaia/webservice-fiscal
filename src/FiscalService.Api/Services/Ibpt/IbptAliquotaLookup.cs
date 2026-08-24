@@ -22,6 +22,7 @@ public sealed class IbptAliquotaLookup : IIbptAliquotaLookup
     private readonly IbptTabelaArquivoStore _tabela;
     private readonly IbptApiClient _api;
     private readonly FiscalConfig _config;
+    private readonly IbptCacheStamp _cacheStamp;
     private readonly ILogger<IbptAliquotaLookup> _logger;
 
     public IbptAliquotaLookup(
@@ -29,12 +30,14 @@ public sealed class IbptAliquotaLookup : IIbptAliquotaLookup
         IbptTabelaArquivoStore tabela,
         IbptApiClient api,
         FiscalConfig config,
+        IbptCacheStamp cacheStamp,
         ILogger<IbptAliquotaLookup> logger)
     {
         _cache = cache;
         _tabela = tabela;
         _api = api;
         _config = config;
+        _cacheStamp = cacheStamp;
         _logger = logger;
     }
 
@@ -47,7 +50,7 @@ public sealed class IbptAliquotaLookup : IIbptAliquotaLookup
         string gtin,
         CancellationToken ct)
     {
-        var cacheKey = $"ibpt:{chave.Uf}|{chave.Ncm}|{chave.Ex}";
+        var cacheKey = $"ibpt:{_cacheStamp.Geracao}:{chave.Uf}|{chave.Ncm}|{chave.Ex}";
         if (_cache.TryGetValue(cacheKey, out IbptAliquota? cached) && cached is not null)
             return cached;
 

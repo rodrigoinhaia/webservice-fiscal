@@ -6,19 +6,28 @@ namespace FiscalService.Api.Services.Ibpt;
 public sealed class IbptTabelaArquivoStore
 {
     private readonly FiscalConfig _config;
+    private readonly IbptCacheStamp _cacheStamp;
     private readonly ILogger<IbptTabelaArquivoStore> _logger;
     private readonly object _lock = new();
     private IReadOnlyDictionary<string, IbptAliquota>? _indice;
 
-    public IbptTabelaArquivoStore(FiscalConfig config, ILogger<IbptTabelaArquivoStore> logger)
+    public IbptTabelaArquivoStore(FiscalConfig config, IbptCacheStamp cacheStamp, ILogger<IbptTabelaArquivoStore> logger)
     {
         _config = config;
+        _cacheStamp = cacheStamp;
         _logger = logger;
     }
 
     public int QuantidadeRegistros => GarantirCarregado().Count;
 
-    public string? Caminho => _config.Ibpt.ArquivoTabela;
+    public string? Caminho
+    {
+        get
+        {
+            var path = _config.Ibpt.ResolverCaminhoArquivo(_config.Ibpt.UfTabela);
+            return File.Exists(path) ? path : _config.Ibpt.ArquivoTabela;
+        }
+    }
 
     public bool Carregada => QuantidadeRegistros > 0;
 
@@ -50,6 +59,49 @@ public sealed class IbptTabelaArquivoStore
             _indice = null;
             GarantirCarregadoLocked();
         }
+        _cacheStamp.Invalidar();
+    }
+
+    /// <summary>Valida, grava no disco e recarrega a tabela enviada pelo painel/API.</summary>
+    public IbptTabelaUploadInterno Importar(Stream conteudo, string? uf)
+    {
+        using var buffer = new MemoryStream();
+        conteudo.CopyTo(buffer);
+        if (buffer.Length == 0)
+            return new IbptTabelaUploadInterno(false, 0, null, uf, null, null, "Arquivo vazio.");
+
+        buffer.Position = 0;
+        using var reader = new StreamReader(buffer, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
+        var ufNorm = string.IsNullOrWhiteSpace(uf) ? _config.Ibpt.UfTabela : uf.Trim().ToUpperInvariant();
+        var lista = IbptTabelaParser.Parse(reader, ufNorm);
+        if (lista.Count == 0)
+            return new IbptTabelaUploadInterno(false, 0, null, ufNorm, null, null,
+                "Nenhum NCM válido no arquivo. Use o CSV do portal De Olho no Imposto (separador ;).");
+
+        var path = _config.Ibpt.ResolverCaminhoArquivo(ufNorm);
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(dir))
+            Directory.CreateDirectory(dir);
+
+        var tmp = path + ".tmp";
+        buffer.Position = 0;
+        using (var fs = File.Create(tmp))
+            buffer.CopyTo(fs);
+        File.Move(tmp, path, overwrite: true);
+
+        _config.Ibpt.ArquivoTabela = path;
+        if (!string.IsNullOrWhiteSpace(ufNorm) && ufNorm != "*")
+            _config.Ibpt.UfTabela = ufNorm;
+
+        lock (_lock)
+            _indice = Indexar(lista);
+
+        _cacheStamp.Invalidar();
+        var amostra = lista[0];
+        _logger.LogInformation("Tabela IBPT importada: {Path} ({Qtd} NCMs, UF={Uf}, versao={Versao})",
+            path, lista.Count, ufNorm, amostra.Versao);
+
+        return new IbptTabelaUploadInterno(true, lista.Count, path, ufNorm, amostra.Versao, amostra.Fonte, "Tabela importada.");
     }
 
     private IReadOnlyDictionary<string, IbptAliquota> GarantirCarregado()
@@ -66,11 +118,11 @@ public sealed class IbptTabelaArquivoStore
         if (_indice is not null)
             return _indice;
 
-        var path = _config.Ibpt.ArquivoTabela;
+        var path = _config.Ibpt.ResolverCaminhoArquivo(_config.Ibpt.UfTabela);
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
         {
-            if (!string.IsNullOrWhiteSpace(path))
-                _logger.LogWarning("Tabela IBPT configurada mas arquivo não encontrado: {Path}", path);
+            if (!string.IsNullOrWhiteSpace(_config.Ibpt.ArquivoTabela) && !File.Exists(_config.Ibpt.ArquivoTabela))
+                _logger.LogWarning("Tabela IBPT configurada mas arquivo não encontrado: {Path}", _config.Ibpt.ArquivoTabela);
             _indice = new Dictionary<string, IbptAliquota>();
             return _indice;
         }
@@ -82,15 +134,8 @@ public sealed class IbptTabelaArquivoStore
                 ? InferirUfDoNome(path)
                 : _config.Ibpt.UfTabela.Trim().ToUpperInvariant();
             var lista = IbptTabelaParser.Parse(reader, uf);
-            var dict = new Dictionary<string, IbptAliquota>(StringComparer.Ordinal);
-            foreach (var item in lista)
-            {
-                var ufItem = string.IsNullOrWhiteSpace(item.Uf) ? "*" : item.Uf;
-                dict[Chave(item.Codigo, ufItem, item.Ex)] = item with { Uf = ufItem };
-            }
-
-            _indice = dict;
-            _logger.LogInformation("Tabela IBPT carregada: {Path} ({Qtd} NCMs, UF={Uf})", path, dict.Count, uf);
+            _indice = Indexar(lista);
+            _logger.LogInformation("Tabela IBPT carregada: {Path} ({Qtd} NCMs, UF={Uf})", path, _indice.Count, uf);
         }
         catch (Exception ex)
         {
@@ -99,6 +144,18 @@ public sealed class IbptTabelaArquivoStore
         }
 
         return _indice;
+    }
+
+    private static Dictionary<string, IbptAliquota> Indexar(IReadOnlyList<IbptAliquota> lista)
+    {
+        var dict = new Dictionary<string, IbptAliquota>(StringComparer.Ordinal);
+        foreach (var item in lista)
+        {
+            var ufItem = string.IsNullOrWhiteSpace(item.Uf) ? "*" : item.Uf;
+            dict[Chave(item.Codigo, ufItem, item.Ex)] = item with { Uf = ufItem };
+        }
+
+        return dict;
     }
 
     private static string InferirUfDoNome(string path)
@@ -115,3 +172,12 @@ public sealed class IbptTabelaArquivoStore
 
     private static string Chave(string ncm, string uf, int ex) => $"{uf}|{ncm}|{ex}";
 }
+
+public sealed record IbptTabelaUploadInterno(
+    bool Sucesso,
+    int Registros,
+    string? Caminho,
+    string? Uf,
+    string? Versao,
+    string? Fonte,
+    string Mensagem);

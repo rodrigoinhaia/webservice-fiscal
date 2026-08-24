@@ -284,20 +284,30 @@ function Test-CicloEmitirCancelar {
         $consBody = & $MontarConsulta $chave
         $consResp = $null
         $okCons = $false
-        # ADN/distribuição DF-e pode atrasar alguns segundos após autorização
-        for ($tentativa = 1; $tentativa -le 5; $tentativa++) {
-            if ($tentativa -gt 1) { Start-Sleep -Seconds 3 }
+        # ADN/distribuição DF-e costuma atrasar; cancelar cedo demais pode impedir a indexação
+        Start-Sleep -Seconds 5
+        for ($tentativa = 1; $tentativa -le 8; $tentativa++) {
+            if ($tentativa -gt 1) { Start-Sleep -Seconds 5 }
             $consResp = Invoke-FiscalApi -Method POST -Path $PathConsultar -Body $consBody
             $cStatCons = [string](Get-Prop $consResp "codigoStatus")
             $okCons = ((Get-Prop $consResp "sucesso") -eq $true) -or ($cStatCons -eq "DOCUMENTOS_LOCALIZADOS")
             if ($okCons) { break }
-            $msgCons = Get-Prop (Get-Prop $consResp "erro") "mensagem"
-            if ($msgCons -and $msgCons -notmatch "Nenhum DF-e localizado|sem detalhes|DOCUMENTOS") {
+            $msgCons = [string](Get-Prop (Get-Prop $consResp "erro") "mensagem")
+            if ($msgCons -and $msgCons -notmatch "Nenhum DF-e localizado|sem detalhes|atrasar") {
                 break
             }
         }
-        Write-SmokeLog -Step "$NomeModelo consultar" -Status $(if ($okCons) { "OK" } else { "FAIL" }) `
-            -Detail "cStat=$(Get-Prop $consResp 'codigoStatus')" -Data $consResp
+        if ($okCons) {
+            Write-SmokeLog -Step "$NomeModelo consultar" -Status "OK" `
+                -Detail "cStat=$(Get-Prop $consResp 'codigoStatus')" -Data $consResp
+        }
+        else {
+            $msgCons = [string](Get-Prop (Get-Prop $consResp "erro") "mensagem")
+            $statusCons = if ($msgCons -match "Nenhum DF-e localizado|atrasar") { "WARN" } else { "FAIL" }
+            Write-SmokeLog -Step "$NomeModelo consultar" -Status $statusCons `
+                -Detail $(if ($msgCons) { $msgCons } else { "cStat=$(Get-Prop $consResp 'codigoStatus')" }) `
+                -Data $consResp
+        }
     }
 
     Start-Sleep -Seconds 2

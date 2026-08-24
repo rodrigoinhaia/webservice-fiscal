@@ -12,6 +12,7 @@ using FiscalService.Api.Validation;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Threading.RateLimiting;
@@ -134,6 +135,12 @@ try
     fiscalConfig.NFSe.DiretorioSchemas = ResolveDiretorioSchemasNfse(fiscalConfig.NFSe.DiretorioSchemas);
 
     builder.Services.AddSingleton(fiscalConfig);
+    builder.Services.Configure<FormOptions>(o =>
+    {
+        o.MultipartBodyLengthLimit = 30 * 1024 * 1024;
+        o.ValueLengthLimit = 30 * 1024 * 1024;
+    });
+    builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 30 * 1024 * 1024);
     Log.Information(
         "Fiscal SEFAZ: Ambiente={Ambiente} TimeoutWs={TimeoutWs}s ({TimeoutMs}ms no DFe.NET)",
         fiscalConfig.Ambiente,
@@ -216,6 +223,7 @@ try
     builder.Services.AddScoped<EmitenteService>();
 
     builder.Services.AddMemoryCache();
+    builder.Services.AddSingleton<IbptCacheStamp>();
     builder.Services.AddHttpClient<IbptApiClient>((sp, client) =>
     {
         var timeout = sp.GetRequiredService<FiscalConfig>().Ibpt.TimeoutSegundos;
@@ -341,17 +349,18 @@ try
     // ── Garantir que os diretórios de trabalho existam ───────────────────────
     Directory.CreateDirectory(fiscalConfig.DiretorioXmls);
     Directory.CreateDirectory(fiscalConfig.DiretorioCertificados);
+    Directory.CreateDirectory(fiscalConfig.Ibpt.ResolverDiretorio());
 
     // ── Pipeline ─────────────────────────────────────────────────────────────
-    if (app.Environment.IsDevelopment())
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "FiscalService API v1");
-            c.RoutePrefix = "swagger";
-        });
-    }
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "FiscalService API v1");
+        c.RoutePrefix = "swagger";
+    });
+
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
 
     app.UseSerilogRequestLogging(opts =>
     {

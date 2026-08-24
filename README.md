@@ -187,7 +187,7 @@ A senha do certificado é armazenada **criptografada** (`IDataProtection`). Em p
 
 ## Autenticação
 
-Todos os endpoints (exceto `/health`) exigem o header:
+Todos os endpoints (exceto `/health`, `/swagger` e `/painel`) exigem o header:
 
 ```
 X-Api-Key: <sua-chave-configurada-em-API_KEY>
@@ -335,6 +335,11 @@ O campo `nome` é opcional; se omitir, usa o nome do arquivo enviado. A resposta
 | GET | `/api/emissoes` | Histórico paginado de emissões |
 | GET | `/api/emissoes/{chave}` | Último log por chave de acesso |
 | GET | `/health` | Health check (sem autenticação) |
+| GET | `/painel` | Painel IBPT (token do emitente + upload da tabela CSV) |
+| GET | `/swagger` | Swagger UI |
+| PUT | `/api/emitentes/{cnpj}/ibpt` | Cadastra o token IBPT do emitente |
+| POST | `/api/ibpt/tabela` | Upload da planilha IBPT (multipart `arquivo` + `uf`) |
+| GET | `/api/ibpt/status` | Status da integração Lei 12.741/2012 |
 
 ---
 

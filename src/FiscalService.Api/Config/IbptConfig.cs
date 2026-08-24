@@ -32,5 +32,39 @@ public sealed class IbptConfig
     /// <summary>UF da tabela local quando o arquivo não tiver coluna UF (tabelas oficiais são por estado).</summary>
     public string? UfTabela { get; set; }
 
+    /// <summary>Pasta de upload da tabela (Docker: <c>/app/ibpt</c>).</summary>
+    public string? Diretorio { get; set; }
+
     public int MaxConsultasParalelas { get; set; } = 4;
+
+    public string ResolverDiretorio()
+    {
+        if (!string.IsNullOrWhiteSpace(ArquivoTabela))
+        {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(ArquivoTabela));
+            if (!string.IsNullOrWhiteSpace(dir))
+                return dir;
+        }
+
+        if (!string.IsNullOrWhiteSpace(Diretorio))
+            return Path.GetFullPath(Diretorio);
+
+        if (Directory.Exists("/app/ibpt"))
+            return "/app/ibpt";
+
+        return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "ibpt"));
+    }
+
+    public string ResolverCaminhoArquivo(string? uf = null)
+    {
+        var ufNorm = (uf ?? "").Trim().ToUpperInvariant();
+        if (!string.IsNullOrWhiteSpace(ArquivoTabela) && (string.IsNullOrEmpty(ufNorm) || ufNorm == "*"))
+            return Path.GetFullPath(ArquivoTabela);
+
+        var dir = ResolverDiretorio();
+        var nome = string.IsNullOrEmpty(ufNorm) || ufNorm == "*"
+            ? "TabelaIBPTax.csv"
+            : $"TabelaIBPTax{ufNorm}.csv";
+        return Path.Combine(dir, nome);
+    }
 }
