@@ -56,7 +56,7 @@ Valida health, autenticação, emitente e numeração:
 .\scripts\smoke-producao.ps1 -ConfirmarProducao
 ```
 
-**NF-e** interestadual RS → SP:
+**NF-e** interestadual RS → SP (consumidor final CPF — SDBR CNPJ exige IE na NF-e B2B):
 
 ```powershell
 .\scripts\smoke-producao.ps1 -Modelo NFe -ConfirmarProducao
