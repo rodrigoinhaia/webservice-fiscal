@@ -4,7 +4,7 @@
   "serie": "3",
   "naturezaOperacao": "Venda de mercadoria adquirida de terceiros",
   "indicadorDestinatario": 2,
-  "informacoesAdicionais": "NOTA FISCAL DE TESTE DO WEBSERVICE — CANCELAMENTO IMEDIATO APOS AUTORIZACAO.",
+  "informacoesAdicionais": "NOTA FISCAL DE TESTE DO WEBSERVICE - CANCELAMENTO IMEDIATO APOS AUTORIZACAO.",
   "destinatario": {
     "cnpj": "53658565000127",
     "razaoSocial": "SDBR SOLUCOES DIGITAIS LTDA",

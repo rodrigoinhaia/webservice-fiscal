@@ -3,7 +3,7 @@
   "numeroNota": 0,
   "serie": "2",
   "naturezaOperacao": "Venda PDV teste webservice",
-  "informacoesAdicionais": "NFC-E DE TESTE — CANCELAMENTO IMEDIATO APOS AUTORIZACAO.",
+  "informacoesAdicionais": "NFCE DE TESTE - CANCELAMENTO IMEDIATO APOS AUTORIZACAO.",
   "destinatario": {
     "cnpj": "53658565000127",
     "razaoSocial": "SDBR SOLUCOES DIGITAIS LTDA",

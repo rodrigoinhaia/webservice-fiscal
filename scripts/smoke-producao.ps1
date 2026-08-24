@@ -114,7 +114,10 @@ if (-not $Cnpj) { throw "Defina SMOKE_CNPJ em producao.env ou -Cnpj" }
 if (Test-Path variable:script:SMOKE_SERIE_NFE) { $SerieNFe = $script:SMOKE_SERIE_NFE }
 if (Test-Path variable:script:SMOKE_SERIE_NFCE) { $SerieNFCe = $script:SMOKE_SERIE_NFCE }
 if (Test-Path variable:script:SMOKE_SERIE_NFSE) { $SerieNFSe = $script:SMOKE_SERIE_NFSE }
-if (Test-Path variable:script:SMOKE_MODELO) { $Modelo = $script:SMOKE_MODELO }
+# CLI (-Modelo) tem precedência sobre SMOKE_MODELO do .env
+if (-not $PSBoundParameters.ContainsKey("Modelo") -and (Test-Path variable:script:SMOKE_MODELO)) {
+    $Modelo = $script:SMOKE_MODELO
+}
 if (-not $IdCsc -and (Test-Path variable:script:SMOKE_ID_CSC)) { $IdCsc = $script:SMOKE_ID_CSC }
 if (-not $Csc -and (Test-Path variable:script:SMOKE_CSC)) { $Csc = $script:SMOKE_CSC }
 

@@ -400,7 +400,7 @@ public class NFeService
                     tpEmis = tpEmis,
                     tpAmb = config.tpAmb,
                     finNFe = (FinalidadeNFe)req.Finalidade,
-                    indFinal = ConsumidorFinal.cfNao,
+                    indFinal = ResolverConsumidorFinal(req.Destinatario),
                     indPres = PresencaComprador.pcPresencial,
                     procEmi = ProcessoEmissao.peAplicativoContribuinte,
                     verProc = "1.0"
@@ -505,6 +505,14 @@ public class NFeService
 
         return d;
     }
+
+    /// <summary>
+    /// SEFAZ exige <c>indFinal=1</c> quando o destinatário é não contribuinte (<c>indIEDest=9</c>).
+    /// </summary>
+    private static ConsumidorFinal ResolverConsumidorFinal(DestinatarioRequest? destinatario) =>
+        destinatario?.IndicadorIe == 9
+            ? ConsumidorFinal.cfConsumidorFinal
+            : ConsumidorFinal.cfNao;
 
     private static det ConstruirItem(ItemNFeRequest item, int numero, int crt)
     {
