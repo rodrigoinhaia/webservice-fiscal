@@ -128,8 +128,10 @@ public static class NFSeDpsMapper
                 CNPJAutor = emitente.Cnpj,
                 Evento = new EventoCancelamento
                 {
+                    // xDesc: valor fixo do XSD (enumeration)
+                    Descricao = "Cancelamento de NFS-e",
                     CodMotivo = ResolverMotivoCancelamento(request.CodigoMotivo),
-                    Descricao = SanitizarDescricao(request.DescricaoMotivo)
+                    Motivo = SanitizarDescricao(request.DescricaoMotivo)
                 }
             }
         };

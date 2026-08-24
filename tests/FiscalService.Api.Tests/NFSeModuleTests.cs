@@ -5,6 +5,7 @@ using FiscalService.Api.Services.NFSe;
 using FiscalService.Api.Validation;
 using FluentValidation.TestHelper;
 using OpenAC.Net.DFe.Core.Common;
+using OpenAC.Net.NFSe.Nacional.Common.Model;
 using OpenAC.Net.NFSe.Nacional.Common.Types;
 using System.Net;
 using Xunit;
@@ -244,6 +245,10 @@ public class NFSeDpsMapperTests
         Assert.Equal(chave, evento.Informacoes.ChNFSe);
         Assert.Equal("12345678000190", evento.Informacoes.CNPJAutor);
         Assert.Equal($"PRE{chave}101101", evento.Informacoes.Id);
+        var cancelamento = Assert.IsType<EventoCancelamento>(evento.Informacoes.Evento);
+        Assert.Equal("Cancelamento de NFS-e", cancelamento.Descricao);
+        Assert.Equal("Erro na descricao do servico.", cancelamento.Motivo);
+        Assert.Equal(MotivoCancelamento.ErroEmissao, cancelamento.CodMotivo);
     }
 }
 
