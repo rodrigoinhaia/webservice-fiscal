@@ -94,9 +94,7 @@ public static class NFSeDpsMapper
                             TipoRetencaoISSQN = ResolverRetencaoIss(request.Valores.TipoRetencaoIssqn),
                             Aliquota = request.Valores.AliquotaIss
                         },
-                        Total = optanteSn
-                            ? null
-                            : new TotalTributos { IndicadorTotal = 0 }
+                        Total = MontarTotalTributos(optanteSn, request.Valores)
                     }
                 },
                 IBSCBS = MontarIbscbs(request, versao)
@@ -156,6 +154,19 @@ public static class NFSeDpsMapper
                 }
             }
         };
+    }
+
+    /// <summary>
+    /// ME/EPP (Simples): pTotTribSN. Demais: indTotTrib=0.
+    /// totTrib é obrigatório no XSD; choice vazio gera E1235.
+    /// </summary>
+    private static TotalTributos MontarTotalTributos(bool optanteSn, NFSeValoresRequest valores)
+    {
+        if (!optanteSn)
+            return new TotalTributos { IndicadorTotal = 0 };
+
+        var pTotTribSn = valores.PercentualTotalTributosSimples ?? 6.00m;
+        return new TotalTributos { PercetualSimples = pTotTribSn };
     }
 
     private static string? ResolverCodNbs(NFSeEmitirRequest request)

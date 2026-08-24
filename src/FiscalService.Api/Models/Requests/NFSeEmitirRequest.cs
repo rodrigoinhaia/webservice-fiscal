@@ -79,6 +79,12 @@ public class NFSeValoresRequest
 
     public decimal? AliquotaIss { get; set; }
     public decimal? ValorIss { get; set; }
+
+    /// <summary>
+    /// Percentual aproximado dos tributos da alíquota do Simples Nacional (pTotTribSN).
+    /// Obrigatório para ME/EPP (CRT 1/2); não usar indTotTrib nesse regime (E0712).
+    /// </summary>
+    public decimal? PercentualTotalTributosSimples { get; set; }
 }
 
 public class NFSeReformaTributariaRequest

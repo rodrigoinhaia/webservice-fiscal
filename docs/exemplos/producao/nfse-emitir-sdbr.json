@@ -35,6 +35,7 @@
   "valores": {
     "valorServico": 1.0,
     "issqn": "OperacaoTributavel",
-    "tipoRetencaoIssqn": "NaoRetido"
+    "tipoRetencaoIssqn": "NaoRetido",
+    "percentualTotalTributosSimples": 6.00
   }
 }

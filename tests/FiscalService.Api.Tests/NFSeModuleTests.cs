@@ -162,7 +162,8 @@ public class NFSeDpsMapperTests
         Assert.NotNull(dps.Informacoes.IBSCBS);
         Assert.Equal(RTCFinNFSe.Regular, dps.Informacoes.IBSCBS.FinalidadeNFSe);
         Assert.Equal(1500m, dps.Informacoes.Valores.ValoresServico.Valor);
-        Assert.Null(dps.Informacoes.Valores.Tributos.Total);
+        Assert.Equal(6.00m, dps.Informacoes.Valores.Tributos.Total!.PercetualSimples);
+        Assert.Null(dps.Informacoes.Valores.Tributos.Total.IndicadorTotal);
     }
 
     [Fact]
