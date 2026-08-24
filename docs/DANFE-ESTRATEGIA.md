@@ -4,7 +4,8 @@
 
 - A API expõe `POST /api/danfe/nfe` e `POST /api/danfe/nfce`, retornando `DanfeResponse` com `pdfBase64` em caso de sucesso.
 - **`POST /api/danfe/nfe/html`** e **`POST /api/danfe/nfce/html`** retornam HTML imprimível (`DanfeHtmlResponse`), funcional em **Linux** e Windows. Com query **`inline=true`**, a resposta é `text/html` para abrir no navegador e usar **Ctrl+P** (salvar em PDF fica a cargo do cliente).
-- `DanfeService` em PDF hoje **não gera PDF** em Linux: lança `NotSupportedException` com orientação a substituir por biblioteca compatível (o layout legado NFe.Danfe.Nativo é Windows-centric).
+- **NF-e (modelo 55) PDF:** implementado via `Danfe.NFe.Core` + `NFeDanfeLocalRenderer` (PdfSharpCore, Linux/Docker). Emissão retorna `danfePdfBase64` quando o `nfeProc` é montado após autorização.
+- **NFC-e PDF:** ainda `NotSupportedException` — use HTML ou aguarde integração QuestPDF/Zeus.
 
 ## Contrato da API (estável)
 
@@ -46,6 +47,7 @@ protocolo). **Não** equivale ao PDF oficial do MOC em todos os detalhes gráfic
 
 ## Próximos passos técnicos no repositório
 
-- Substituir o corpo de `DanfeService.GerarNFePdf` / `GerarNFCePdf` por implementação cross-platform (PDF).
+- Integrar DANFE NFC-e PDF (QuestPDF ou equivalente cross-platform).
 - Opcional: ampliar `DanfeHtmlRenderer` para lacres em `vol`, múltiplos `reboque`, grupos opcionais raros do leiaute.
 - Opcional: feature flag `Fiscal:DanfeHabilitado` para não expor rotas em ambientes sem motor de PDF.
+- Opcional: logo do emitente no DANFE NF-e (`AdicionarLogoImagem` quando houver asset configurado).

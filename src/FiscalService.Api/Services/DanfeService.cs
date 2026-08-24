@@ -1,36 +1,46 @@
 using FiscalService.Api.Models.Responses;
+using FiscalService.Api.Services.Danfe;
 using FiscalService.Api.Services.DanfeHtml;
 
 namespace FiscalService.Api.Services;
 
 /// <summary>
-/// Geração de DANFE em PDF. Implementação atual não gera PDF em Linux; ver <c>docs/DANFE-ESTRATEGIA.md</c>.
-/// A dependência NFe.Danfe.Nativo é Windows-only e não pode ser usada neste ambiente.
-/// Para produção, utilize uma solução cross-platform (ex: DanfeSharp, QuestPDF, etc.).
+/// Geração de DANFE em PDF. NF-e via <see cref="NFeDanfeLocalRenderer"/> (Danfe.NFe.Core / Linux).
+/// NFC-e PDF permanece pendente de biblioteca cross-platform.
 /// </summary>
 public class DanfeService
 {
     private readonly ILogger<DanfeService> _logger;
+    private readonly NFeDanfeLocalRenderer _nfeDanfeLocal;
 
-    public DanfeService(ILogger<DanfeService> logger)
+    public DanfeService(ILogger<DanfeService> logger, NFeDanfeLocalRenderer nfeDanfeLocal)
     {
         _logger = logger;
+        _nfeDanfeLocal = nfeDanfeLocal;
     }
 
     /// <summary>Gera o DANFE NF-e a partir do XML do nfeProc e retorna em base64.</summary>
     public string GerarNFePdf(string xmlNfeProc)
     {
-        _logger.LogWarning("Geração de DANFE NF-e não está disponível neste ambiente (requer biblioteca cross-platform).");
-        throw new NotSupportedException(
-            "Geração de DANFE não está disponível. Instale uma biblioteca de renderização compatível com Linux (ex: DanfeSharp).");
+        var pdf = _nfeDanfeLocal.TentarGerarDeXml(xmlNfeProc);
+        if (pdf is null or { Length: 0 })
+        {
+            _logger.LogWarning("DANFE NF-e não gerado a partir do XML informado.");
+            throw new InvalidOperationException(
+                "Não foi possível gerar o PDF do DANFE. Informe um XML nfeProc válido (NFe + protNFe).");
+        }
+
+        return Convert.ToBase64String(pdf);
     }
 
     /// <summary>Gera o DANFE NFC-e a partir do XML do nfeProc e retorna em base64.</summary>
     public string GerarNFCePdf(string xmlNfeProc, string idCsc, string csc)
     {
-        _logger.LogWarning("Geração de DANFE NFC-e não está disponível neste ambiente.");
+        _ = idCsc;
+        _ = csc;
+        _logger.LogWarning("Geração de DANFE NFC-e em PDF ainda não está disponível neste ambiente.");
         throw new NotSupportedException(
-            "Geração de DANFE NFC-e não está disponível. Instale uma biblioteca de renderização compatível com Linux.");
+            "Geração de DANFE NFC-e em PDF não está disponível. Use o endpoint HTML ou aguarde integração QuestPDF.");
     }
 
     public DanfeResponse GerarNFePdfResponse(string xmlNfeProc)

@@ -3,6 +3,7 @@ using FiscalService.Api.Configuration;
 using FiscalService.Api.Data;
 using FiscalService.Api.Middlewares;
 using FiscalService.Api.Services;
+using FiscalService.Api.Services.Danfe;
 using FiscalService.Api.Services.Ibpt;
 using FiscalService.Api.Services.NFSe;
 using FiscalService.Api.HealthChecks;
@@ -253,6 +254,7 @@ try
     builder.Services.AddTransient<CTeService>();
     builder.Services.AddTransient<MDFeService>();
     builder.Services.AddTransient<DanfeService>();
+    builder.Services.AddSingleton<NFeDanfeLocalRenderer>();
     builder.Services.AddTransient<NumeracaoService>();
     builder.Services.AddTransient<CertificadoService>();
     builder.Services.AddTransient<NFSeOpenAcFactory>();

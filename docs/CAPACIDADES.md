@@ -596,8 +596,10 @@ Rotas `POST /api/danfe/nfe` e `POST /api/danfe/nfce` retornam:
 { "sucesso": true|false, "pdfBase64": "…", "erro": { "tipo": "NaoSuportado", … } }
 ```
 
-Estado atual do **PDF**: **`DanfeService` lança `NotSupportedException` em Linux**. Motivo: o
-pacote `NFe.Danfe.Nativo` é Windows-centric (GDI+/`System.Drawing`).
+Estado atual do **PDF**:
+
+- **NF-e (modelo 55):** gerado em Linux via `Danfe.NFe.Core` (`NFeDanfeLocalRenderer`). Requer XML **`nfeProc`** completo (NFe + `protNFe`). A emissão monta esse XML em `xmlAutorizado` e preenche `danfePdfBase64` quando possível.
+- **NFC-e (modelo 65):** ainda `NotSupportedException` em PDF — use HTML ou aguarde integração QuestPDF.
 
 ### 11.2 HTML (impressão pelo navegador)
 
@@ -614,13 +616,11 @@ transporta, veículo, volumes), **pagamentos** (cartão quando informado), **com
 (infCpl, obsCont, obsFisco). Ainda **não** reproduz 100% do desenho gráfico oficial do MOC (ex.: grade de
 campos idêntica ao PDF SEFAZ).
 
-### 11.3 Evolução (PDF profissional)
+### 11.3 Evolução
 
-Caminhos adicionais em `docs/DANFE-ESTRATEGIA.md`:
-
-1. Microsserviço externo dedicado (worker Windows, QuestPDF, etc.).
-2. Biblioteca .NET cross-platform (DanfeSharp / QuestPDF).
-3. Geração local no cliente a partir do `xmlAutorizado`.
+- **NFC-e PDF:** integrar `Zeus.Net.NFe.Danfe.QuestPdf` ou equivalente.
+- Logo do emitente no DANFE NF-e (opcional).
+- Detalhes em `docs/DANFE-ESTRATEGIA.md`.
 
 Durante a emissão NF-e/NFC-e o DANFE **PDF** é tentado **best-effort**: se falhar, o
 `FiscalResponse` ainda é `sucesso=true` com `danfePdfBase64=null` (a operação
@@ -929,7 +929,7 @@ Documentados via `OpenApiCommonResponsesOperationFilter` (Swagger):
 
 | Tema | Estado |
 |---|---|
-| **DANFE PDF em Linux** | Não suportado nativamente (PDF). **DANFE em HTML** disponível em `/api/danfe/nfe/html` e `/api/danfe/nfce/html`. Veja `docs/DANFE-ESTRATEGIA.md`. |
+| **DANFE PDF em Linux** | **NF-e:** suportado (`Danfe.NFe.Core`). **NFC-e PDF:** ainda não — use `/api/danfe/nfce/html`. |
 | **Certificado A3 / HSM** | Apenas A1 (`.pfx`) está implementado (`TipoCertificado.A1Arquivo`). |
 | **Modais MDF-e ≥ 02** | Construção do modal apenas para **rodoviário** (`MDFeRodo`); demais não montados. |
 | **CT-e tributação** | ICMS00 fixo a 12% no construtor — para cenários ICMS-ST/Reduzido use evolução do `CTeService`. |
@@ -951,7 +951,8 @@ Da seção *Fase 3* do `PLANNING.md` (atualizado conforme o que já foi entregue
 - ✅ Sincronização emissão → numeração (`ConfirmarNumeroAsync` automático).
 - ✅ Endpoint de consulta de **logs de emissão** com filtros e paginação
   (`GET /api/emissoes`, `GET /api/emissoes/{chave}`).
-- ⏳ DANFE multiplataforma (DanfeSharp / QuestPDF / serviço externo).
+- ✅ DANFE NF-e PDF multiplataforma (`Danfe.NFe.Core`).
+- ⏳ DANFE NFC-e PDF (QuestPDF).
 - ✅ **Contingência** SVC-AN / SVC-RS / Offline na NF-e (`tipoEmissao`).
 - ✅ **Retry** em falha transitória SEFAZ (`SefazRetry`).
 - ✅ **Distribuição DF-e** e **manifestação do destinatário**.
@@ -991,7 +992,7 @@ Da seção *Fase 3* do `PLANNING.md` (atualizado conforme o que já foi entregue
 | NFC-e | `src/FiscalService.Api/Services/NFCeService.cs`, `Controllers/NFCeController.cs` |
 | CT-e | `src/FiscalService.Api/Services/CTeService.cs`, `Controllers/CTeController.cs` |
 | MDF-e | `src/FiscalService.Api/Services/MDFeService.cs`, `Controllers/MDFeController.cs` |
-| DANFE | `src/FiscalService.Api/Services/DanfeService.cs`, `Controllers/DanfeController.cs`, `Services/DanfeHtml/DanfeHtmlRenderer.cs` |
+| DANFE | `Services/Danfe/NFeDanfeLocalRenderer.cs`, `Services/Danfe/NFeProcComposer.cs`, `Services/DanfeService.cs`, `Controllers/DanfeController.cs`, `Services/DanfeHtml/DanfeHtmlRenderer.cs` |
 | Tributação ICMS / PIS / COFINS / IPI | `src/FiscalService.Api/Services/Fiscal/ImpostoIcmsMapper.cs`, `ImpostoItemFactory.cs`, `ImpostoTributacaoCatalog.cs` |
 | UF → IBGE | `src/FiscalService.Api/Helpers/UfHelper.cs` |
 | Validações | `src/FiscalService.Api/Validation/*Validator.cs` |

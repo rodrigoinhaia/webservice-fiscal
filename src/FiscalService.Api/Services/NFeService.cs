@@ -7,6 +7,7 @@ using FiscalService.Api.Data.Entities;
 using FiscalService.Api.Helpers;
 using FiscalService.Api.Models.Requests;
 using FiscalService.Api.Models.Responses;
+using FiscalService.Api.Services.Danfe;
 using FiscalService.Api.Services.Fiscal;
 using FiscalService.Api.Services.Ibpt;
 using Microsoft.EntityFrameworkCore;
@@ -105,7 +106,9 @@ public class NFeService
                 return FiscalResponse.Falha("RejeicaoSefaz", $"Rejeição SEFAZ: {xMotivo}", $"cStat: {cStat}");
             }
 
-            var xmlAutorizado = retorno.RetornoStr ?? string.Empty;
+            var xmlAutorizado = retorno.Retorno?.protNFe is not null
+                ? NFeProcComposer.MontarDeAutorizacao(nfe, retorno.Retorno.protNFe)
+                : retorno.RetornoStr ?? string.Empty;
 
             await RegistrarLogAsync(request.ConfiguracaoEmitente.Cnpj, "55", request.Serie,
                 request.NumeroNota, chave, protocolo, "Autorizado", cStat, xMotivo,
