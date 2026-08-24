@@ -49,7 +49,7 @@ public class NFSeController : ControllerBase
         return resultado.Sucesso ? Ok(resultado) : UnprocessableEntity(resultado);
     }
 
-    /// <summary>Download do DANFSe em PDF (base64).</summary>
+    /// <summary>DANFSe em PDF (base64): geração local NT 008 a partir do XML; fallback ADN.</summary>
     [HttpGet("danfse/{chave}")]
     public async Task<IActionResult> Danfse(
         string chave,

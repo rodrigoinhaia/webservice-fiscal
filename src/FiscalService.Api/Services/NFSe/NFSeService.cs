@@ -6,6 +6,7 @@ using FiscalService.Api.Models.Responses;
 using FiscalService.Api.Services.Fiscal;
 using Microsoft.EntityFrameworkCore;
 using OpenAC.Net.NFSe.Nacional;
+using OpenAC.Net.NFSe.Nacional.Common.Model;
 using OpenAC.Net.NFSe.Nacional.Common.Types;
 
 namespace FiscalService.Api.Services.NFSe;
@@ -21,6 +22,7 @@ public sealed class NFSeService
     private readonly NumeracaoService _numeracaoService;
     private readonly EmitenteService _emitenteService;
     private readonly NFSeOpenAcFactory _openAcFactory;
+    private readonly NFSeDanfseLocalRenderer _danfseLocal;
     private readonly ILogger<NFSeService> _logger;
 
     public NFSeService(
@@ -29,6 +31,7 @@ public sealed class NFSeService
         NumeracaoService numeracaoService,
         EmitenteService emitenteService,
         NFSeOpenAcFactory openAcFactory,
+        NFSeDanfseLocalRenderer danfseLocal,
         ILogger<NFSeService> logger)
     {
         _fiscalConfig = fiscalConfig;
@@ -36,6 +39,7 @@ public sealed class NFSeService
         _numeracaoService = numeracaoService;
         _emitenteService = emitenteService;
         _openAcFactory = openAcFactory;
+        _danfseLocal = danfseLocal;
         _logger = logger;
     }
 
@@ -99,24 +103,15 @@ public sealed class NFSeService
                 request.ConfiguracaoEmitente.Ambiente,
                 ct);
 
-            string? pdfBase64 = null;
-            if (!string.IsNullOrWhiteSpace(chave))
-            {
-                try
-                {
-                    var pdf = await openAc.DownloadDANFSeAsync(chave);
-                    if (pdf is { Length: > 0 })
-                        pdfBase64 = Convert.ToBase64String(pdf);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "DANFSe não obtido após emissão; prosseguindo sem PDF.");
-                }
-            }
+            var homologacao = !EhProducao(request.ConfiguracaoEmitente.Ambiente);
+            var xmlAutorizado = resultado.XmlNFSe
+                                ?? retorno.XmlRetorno;
+            var pdfBase64 = await ObterDanfseBase64AposEmissaoAsync(
+                openAc, chave, resultado.NFSe, xmlAutorizado, homologacao);
 
             _logger.LogInformation("NFS-e autorizada: Chave={Chave}", chave);
             return FiscalResponse.Ok(chave, protocolo, "100", mensagem,
-                xml: retorno.XmlRetorno, pdf: pdfBase64);
+                xml: xmlAutorizado ?? retorno.XmlRetorno, pdf: pdfBase64);
         }
         catch (Exception ex)
         {
@@ -237,15 +232,53 @@ public sealed class NFSeService
             var config = await _emitenteService.ResolverConfiguracaoAsync(emitenteSource, ct);
             var ctx = await ObterContextoNfseAsync(config.Cnpj, ct);
             var openAc = _openAcFactory.Criar(config, ctx);
+            var homologacao = !EhProducao(config.Ambiente);
 
-            var pdf = await SefazRetry.ExecuteAsync(_fiscalConfig, _logger, "NFSeDownloadDanfse", () =>
-                openAc.DownloadDANFSeAsync(chaveAcesso));
+            // NT 008: preferir PDF local a partir do XML (API ADN de DANFSe suspensa).
+            string? xmlNfse = null;
+            try
+            {
+                var consulta = await SefazRetry.ExecuteAsync(_fiscalConfig, _logger, "NFSeConsultaChaveDanfse", () =>
+                    openAc.ConsultaChaveAsync(chaveAcesso));
+                if (consulta.Resultado?.StatusProcessamento == StatusProcessamentoDistribuicao.DOCUMENTOS_LOCALIZADOS)
+                {
+                    xmlNfse = consulta.Resultado.Lote?
+                        .FirstOrDefault(d => string.Equals(d.ChaveAcesso, chaveAcesso, StringComparison.Ordinal))
+                        ?.ArquivoXml;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Consulta ADN para DANFSe local falhou; tentando fallback. Chave={Chave}", chaveAcesso);
+            }
 
-            if (pdf is null or { Length: 0 })
-                return FiscalResponse.Falha("DanfseIndisponivel", "DANFSe não retornado pelo ADN.");
+            var pdfLocal = _danfseLocal.TentarGerarDeXml(xmlNfse, homologacao);
+            if (pdfLocal is { Length: > 0 })
+            {
+                return FiscalResponse.Ok(chaveAcesso, string.Empty, "100", "DANFSe gerado localmente (NT 008).",
+                    xml: xmlNfse, pdf: Convert.ToBase64String(pdfLocal));
+            }
 
-            return FiscalResponse.Ok(chaveAcesso, string.Empty, "100", "DANFSe obtido.",
-                pdf: Convert.ToBase64String(pdf));
+            try
+            {
+                var pdfAdn = await SefazRetry.ExecuteAsync(_fiscalConfig, _logger, "NFSeDownloadDanfse", () =>
+                    openAc.DownloadDANFSeAsync(chaveAcesso));
+                if (pdfAdn is { Length: > 0 })
+                {
+                    return FiscalResponse.Ok(chaveAcesso, string.Empty, "100", "DANFSe obtido via ADN.",
+                        xml: xmlNfse, pdf: Convert.ToBase64String(pdfAdn));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Download DANFSe via ADN indisponível. Chave={Chave}", chaveAcesso);
+            }
+
+            return FiscalResponse.Falha(
+                "DanfseIndisponivel",
+                string.IsNullOrWhiteSpace(xmlNfse)
+                    ? "DANFSe indisponível: XML da NFS-e ainda não localizado no ADN (aguarde indexação) e API oficial de PDF suspensa (NT 008)."
+                    : "DANFSe indisponível: falha ao gerar PDF local a partir do XML e API ADN sem retorno.");
         }
         catch (Exception ex)
         {
@@ -253,6 +286,47 @@ public sealed class NFSeService
             return FiscalResponse.Falha(ClassificarExcecao(ex), ex.Message, ex.ToString());
         }
     }
+
+    private async Task<string?> ObterDanfseBase64AposEmissaoAsync(
+        OpenNFSeNacional openAc,
+        string chave,
+        NotaFiscalServico? nota,
+        string? xmlAutorizado,
+        bool homologacao)
+    {
+        try
+        {
+            var pdf = _danfseLocal.TentarGerar(nota, homologacao)
+                      ?? _danfseLocal.TentarGerarDeXml(xmlAutorizado, homologacao);
+
+            if ((pdf is null || pdf.Length == 0) && !string.IsNullOrWhiteSpace(chave))
+            {
+                try
+                {
+                    pdf = await openAc.DownloadDANFSeAsync(chave);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Fallback ADN DANFSe após emissão indisponível. Chave={Chave}", chave);
+                }
+            }
+
+            if (pdf is { Length: > 0 })
+                return Convert.ToBase64String(pdf);
+
+            _logger.LogWarning("DANFSe não gerado após emissão; prosseguindo sem PDF. Chave={Chave}", chave);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "DANFSe não obtido após emissão; prosseguindo sem PDF. Chave={Chave}", chave);
+        }
+
+        return null;
+    }
+
+    private static bool EhProducao(string? ambiente) =>
+        string.Equals(ambiente, "Producao", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(ambiente, "Produção", StringComparison.OrdinalIgnoreCase);
 
     private async Task<EmitenteNfseContexto> ObterContextoNfseAsync(string cnpj, CancellationToken ct)
     {

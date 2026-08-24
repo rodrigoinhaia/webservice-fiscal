@@ -256,6 +256,7 @@ try
     builder.Services.AddTransient<NumeracaoService>();
     builder.Services.AddTransient<CertificadoService>();
     builder.Services.AddTransient<NFSeOpenAcFactory>();
+    builder.Services.AddSingleton<NFSeDanfseLocalRenderer>();
     builder.Services.AddTransient<NFSeService>();
     builder.Services.AddScoped<EmissaoLogService>();
 

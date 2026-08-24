@@ -86,7 +86,7 @@ Objetivo: **backend fiscal centralizado** consumível por qualquer cliente HTTP
 | **NFC-e** | `65` | 4.0 | Emitir (com CSC, IdCSC, QR Code v1/v2/v3) · Cancelar |
 | **CT-e** | `57` | 4.0 | Emitir · Cancelar |
 | **MDF-e** | `58` | 3.0 | Emitir · Encerrar · Cancelar |
-| **NFS-e Nacional** | `NS` (interno) | DPS 1.01 | Emitir DPS · Cancelar · Consultar ADN · DANFSe PDF |
+| **NFS-e Nacional** | `NS` (interno) | DPS 1.01 | Emitir DPS · Cancelar · Consultar ADN · DANFSe PDF (local NT 008) |
 
 > **NFS-e** usa [OpenAC.Net.NFSe.Nacional](https://github.com/OpenAC-Net/OpenAC.Net.NFSe.Nacional) (REST ADN), **não** SEFAZ SOAP. ISSQN na NF-e (item) é roadmap separado — ver limitações.
 
@@ -149,9 +149,11 @@ Módulo **isolado** (OpenAC). Desabilitável via `Fiscal:NFSe:Habilitado=false` 
 | POST | `/api/nfse/emitir` | Monta DPS, assina, envia ao ADN; numeração modelo `NS` |
 | POST | `/api/nfse/cancelar` | Evento de cancelamento (`InfPedReg` / `ChNFSe`) |
 | POST | `/api/nfse/consultar` | Consulta DF-e por chave (distribuição ADN) |
-| GET | `/api/nfse/danfse/{chave}` | PDF DANFSe em base64 (`DanfePdfBase64`) |
+| GET | `/api/nfse/danfse/{chave}` | PDF DANFSe em base64 (`DanfePdfBase64`) — geração local (NT 008) a partir do XML ADN; fallback API ADN |
 
 Emitente cadastrado pode incluir `inscricaoMunicipal` e `email` (opcionais). Exemplos: `docs/exemplos/nfse/`. Schemas: `docs/SCHEMAS-NFSE.md`.
+
+> **DANFSe (NT 008):** a API oficial de PDF do ADN está suspensa; o serviço gera o PDF localmente com `OpenAC.Net.NFSe.Nacional.DANFSe.PDFSharp` (layout nacional + QR Code). Na emissão, o PDF usa `XmlNFSe`/`NotaFiscalServico` do retorno; no download, consulta o XML por chave e renderiza.
 
 ### 4.6 DANFE / PDF — `DanfeController` (`/api/danfe`)
 

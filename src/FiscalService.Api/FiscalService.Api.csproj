@@ -24,6 +24,7 @@
 
     <!-- NFS-e Padrão Nacional (ADN) — isolado do Zeus/SEFAZ -->
     <PackageReference Include="OpenAC.Net.NFSe.Nacional" Version="1.5.0" />
+    <PackageReference Include="OpenAC.Net.NFSe.Nacional.DANFSe.PDFSharp" Version="1.0.0" />
 
     <!-- DFe.NET: NFe.Danfe.Nativo embutido em Zeus.Net.NFe.NFCe. Pin Zeus 2026.8.18.2047 -->
     <PackageReference Include="Zeus.Net.NFe.NFCe" Version="2026.8.18.2047" />

@@ -299,6 +299,127 @@ public class NFSeOpenAcFactoryTests
     }
 }
 
+public class NFSeDanfseLocalRendererTests
+{
+    private static readonly string XmlNfseMinimo = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01">
+          <infNFSe Id="NFS43051041253117200017000000000000000000000000000001">
+            <xLocEmi>PORTO ALEGRE</xLocEmi>
+            <xLocPrestacao>PORTO ALEGRE</xLocPrestacao>
+            <nNFSe>1</nNFSe>
+            <cLocIncid>4314902</cLocIncid>
+            <xLocIncid>PORTO ALEGRE</xLocIncid>
+            <xTribNac>Analise e desenvolvimento de sistemas</xTribNac>
+            <verAplic>FiscalService</verAplic>
+            <ambGer>1</ambGer>
+            <tpEmis>1</tpEmis>
+            <cStat>100</cStat>
+            <dhProc>2026-08-23T10:00:00-03:00</dhProc>
+            <nDFSe>1</nDFSe>
+            <emit>
+              <CNPJ>12531172000170</CNPJ>
+              <xNome>Samuel Diehl e Cia Ltda</xNome>
+              <enderNac>
+                <xLgr>Rua Teste</xLgr>
+                <nro>100</nro>
+                <xBairro>Centro</xBairro>
+                <cMun>4314902</cMun>
+                <UF>RS</UF>
+                <CEP>90000000</CEP>
+              </enderNac>
+            </emit>
+            <valores>
+              <vLiq>100.00</vLiq>
+            </valores>
+            <DPS versao="1.01">
+              <infDPS Id="DPS431490212531172000170001000000000000001">
+                <tpAmb>1</tpAmb>
+                <dhEmi>2026-08-23T10:00:00-03:00</dhEmi>
+                <verAplic>FiscalService</verAplic>
+                <serie>1</serie>
+                <nDPS>1</nDPS>
+                <dCompet>2026-08-01</dCompet>
+                <tpEmit>1</tpEmit>
+                <cLocEmi>4314902</cLocEmi>
+                <prest>
+                  <CNPJ>12531172000170</CNPJ>
+                  <regTrib>
+                    <opSimpNac>3</opSimpNac>
+                    <regApTribSN>1</regApTribSN>
+                    <regEspTrib>0</regEspTrib>
+                  </regTrib>
+                </prest>
+                <toma>
+                  <CNPJ>98765432000100</CNPJ>
+                  <xNome>Tomador Teste</xNome>
+                  <end>
+                    <endNac>
+                      <cMun>4314902</cMun>
+                      <CEP>90000000</CEP>
+                    </endNac>
+                    <xLgr>Rua A</xLgr>
+                    <nro>1</nro>
+                    <xBairro>Centro</xBairro>
+                  </end>
+                </toma>
+                <serv>
+                  <locPrest>
+                    <cLocPrestacao>4314902</cLocPrestacao>
+                  </locPrest>
+                  <cServ>
+                    <cTribNac>010101</cTribNac>
+                    <xDescServ>Servico de software</xDescServ>
+                  </cServ>
+                </serv>
+                <valores>
+                  <vServPrest>
+                    <vServ>100.00</vServ>
+                  </vServPrest>
+                  <trib>
+                    <tribMun>
+                      <tribISSQN>1</tribISSQN>
+                      <tpRetISSQN>2</tpRetISSQN>
+                    </tribMun>
+                    <totTrib>
+                      <pTotTribSN>6.00</pTotTribSN>
+                    </totTrib>
+                  </trib>
+                </valores>
+              </infDPS>
+            </DPS>
+          </infNFSe>
+        </NFSe>
+        """;
+
+    [Fact]
+    public void GerarDeXml_produz_pdf_valido()
+    {
+        var renderer = new NFSeDanfseLocalRenderer(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<NFSeDanfseLocalRenderer>.Instance);
+
+        var pdf = renderer.TentarGerarDeXml(XmlNfseMinimo, homologacao: false);
+
+        Assert.NotNull(pdf);
+        Assert.True(pdf!.Length > 1000);
+        Assert.Equal(0x25, pdf[0]); // %
+        Assert.Equal((byte)'P', pdf[1]);
+        Assert.Equal((byte)'D', pdf[2]);
+        Assert.Equal((byte)'F', pdf[3]);
+    }
+
+    [Fact]
+    public void NormalizarXml_extrai_NFSe_de_envelope()
+    {
+        var corpo = XmlNfseMinimo.Replace("""<?xml version="1.0" encoding="UTF-8"?>""", string.Empty).Trim();
+        var envelope = $"<raiz><outro>x</outro>{corpo}</raiz>";
+        var xml = NFSeDanfseLocalRenderer.NormalizarXmlNfse(envelope);
+        Assert.NotNull(xml);
+        Assert.Contains("<NFSe", xml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("<raiz>", xml, StringComparison.Ordinal);
+    }
+}
+
 public class NFSeDpsXmlNormalizerTests
 {
     [Fact]
