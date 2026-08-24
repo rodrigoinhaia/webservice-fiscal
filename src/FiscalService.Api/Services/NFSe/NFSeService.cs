@@ -106,7 +106,7 @@ public sealed class NFSeService
             var homologacao = !EhProducao(request.ConfiguracaoEmitente.Ambiente);
             var xmlAutorizado = resultado.XmlNFSe
                                 ?? retorno.XmlRetorno;
-            var pdfBase64 = await ObterDanfseBase64AposEmissaoAsync(
+            var pdfBase64 = ObterDanfseBase64AposEmissao(
                 openAc, chave, resultado.NFSe, xmlAutorizado, homologacao);
 
             _logger.LogInformation("NFS-e autorizada: Chave={Chave}", chave);
@@ -249,7 +249,7 @@ public sealed class NFSeService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Consulta ADN para DANFSe local falhou; tentando fallback. Chave={Chave}", chaveAcesso);
+                _logger.LogWarning(ex, "Consulta ADN para XML do DANFSe local falhou. Chave={Chave}", chaveAcesso);
             }
 
             var pdfLocal = _danfseLocal.TentarGerarDeXml(xmlNfse, homologacao);
@@ -259,26 +259,27 @@ public sealed class NFSeService
                     xml: xmlNfse, pdf: Convert.ToBase64String(pdfLocal));
             }
 
-            try
-            {
-                var pdfAdn = await SefazRetry.ExecuteAsync(_fiscalConfig, _logger, "NFSeDownloadDanfse", () =>
-                    openAc.DownloadDANFSeAsync(chaveAcesso));
-                if (pdfAdn is { Length: > 0 })
-                {
-                    return FiscalResponse.Ok(chaveAcesso, string.Empty, "100", "DANFSe obtido via ADN.",
-                        xml: xmlNfse, pdf: Convert.ToBase64String(pdfAdn));
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Download DANFSe via ADN indisponível. Chave={Chave}", chaveAcesso);
-            }
+            // NT 008: API ADN de PDF suspensa. Descomentar se o download oficial for liberado novamente.
+            // try
+            // {
+            //     var pdfAdn = await SefazRetry.ExecuteAsync(_fiscalConfig, _logger, "NFSeDownloadDanfse", () =>
+            //         openAc.DownloadDANFSeAsync(chaveAcesso));
+            //     if (pdfAdn is { Length: > 0 })
+            //     {
+            //         return FiscalResponse.Ok(chaveAcesso, string.Empty, "100", "DANFSe obtido via ADN.",
+            //             xml: xmlNfse, pdf: Convert.ToBase64String(pdfAdn));
+            //     }
+            // }
+            // catch (Exception ex)
+            // {
+            //     _logger.LogWarning(ex, "Download DANFSe via ADN indisponível. Chave={Chave}", chaveAcesso);
+            // }
 
             return FiscalResponse.Falha(
                 "DanfseIndisponivel",
                 string.IsNullOrWhiteSpace(xmlNfse)
-                    ? "DANFSe indisponível: XML da NFS-e ainda não localizado no ADN (aguarde indexação) e API oficial de PDF suspensa (NT 008)."
-                    : "DANFSe indisponível: falha ao gerar PDF local a partir do XML e API ADN sem retorno.");
+                    ? "DANFSe indisponível: XML da NFS-e ainda não localizado no ADN (aguarde indexação)."
+                    : "DANFSe indisponível: falha ao gerar PDF local a partir do XML (NT 008).");
         }
         catch (Exception ex)
         {
@@ -287,38 +288,43 @@ public sealed class NFSeService
         }
     }
 
-    private async Task<string?> ObterDanfseBase64AposEmissaoAsync(
+    private string? ObterDanfseBase64AposEmissao(
         OpenNFSeNacional openAc,
         string chave,
         NotaFiscalServico? nota,
         string? xmlAutorizado,
         bool homologacao)
     {
+        // openAc/chave reservados para reativar o fallback ADN abaixo (NT 008 suspensa).
+        _ = openAc;
+        _ = chave;
+
         try
         {
             var pdf = _danfseLocal.TentarGerar(nota, homologacao)
                       ?? _danfseLocal.TentarGerarDeXml(xmlAutorizado, homologacao);
 
-            if ((pdf is null || pdf.Length == 0) && !string.IsNullOrWhiteSpace(chave))
-            {
-                try
-                {
-                    pdf = await openAc.DownloadDANFSeAsync(chave);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Fallback ADN DANFSe após emissão indisponível. Chave={Chave}", chave);
-                }
-            }
+            // NT 008: API ADN de PDF suspensa. Descomentar e tornar este método async se liberarem novamente.
+            // if ((pdf is null || pdf.Length == 0) && !string.IsNullOrWhiteSpace(chave))
+            // {
+            //     try
+            //     {
+            //         pdf = await openAc.DownloadDANFSeAsync(chave);
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         _logger.LogWarning(ex, "Fallback ADN DANFSe após emissão indisponível. Chave={Chave}", chave);
+            //     }
+            // }
 
             if (pdf is { Length: > 0 })
                 return Convert.ToBase64String(pdf);
 
-            _logger.LogWarning("DANFSe não gerado após emissão; prosseguindo sem PDF. Chave={Chave}", chave);
+            _logger.LogWarning("DANFSe local não gerado após emissão; prosseguindo sem PDF. Chave={Chave}", chave);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "DANFSe não obtido após emissão; prosseguindo sem PDF. Chave={Chave}", chave);
+            _logger.LogWarning(ex, "DANFSe local não obtido após emissão; prosseguindo sem PDF. Chave={Chave}", chave);
         }
 
         return null;
