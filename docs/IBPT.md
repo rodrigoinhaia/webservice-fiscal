@@ -39,12 +39,12 @@ Não versionamos a tabela (arquivo grande e de uso restrito ao CNPJ cadastrado).
 
 ## Painel operacional
 
-Abra **`/painel`** no FiscalService (produção ou local). Informe a API Key e:
+O FiscalService é **somente API**. Token por CNPJ e upload da tabela CSV ficam no projeto **`webservice-fiscal-painel`** (rotas `/ibpt` e detalhe do emitente). O painel chama, com `X-Api-Key` no BFF:
 
-1. Selecione o emitente e cole o token do portal → Salvar token (`PUT /api/emitentes/{cnpj}/ibpt`).
-2. Envie o CSV da UF baixado no portal → Enviar e ativar (`POST /api/ibpt/tabela`).
+1. Token do emitente → `PUT /api/emitentes/{cnpj}/ibpt`
+2. CSV da UF baixado no portal → `POST /api/ibpt/tabela`
 
-Swagger (todas as operações) fica em `/swagger`. As rotas `/api/*` continuam exigindo `X-Api-Key`.
+As rotas `/api/*` continuam exigindo `X-Api-Key`. Swagger fica em `/swagger` apenas em Development.
 
 ## Token (por CNPJ)
 

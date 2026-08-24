@@ -352,15 +352,15 @@ try
     Directory.CreateDirectory(fiscalConfig.Ibpt.ResolverDiretorio());
 
     // ── Pipeline ─────────────────────────────────────────────────────────────
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    if (app.Environment.IsDevelopment())
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "FiscalService API v1");
-        c.RoutePrefix = "swagger";
-    });
-
-    app.UseDefaultFiles();
-    app.UseStaticFiles();
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "FiscalService API v1");
+            c.RoutePrefix = "swagger";
+        });
+    }
 
     app.UseSerilogRequestLogging(opts =>
     {

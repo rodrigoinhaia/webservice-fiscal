@@ -284,15 +284,23 @@ function Test-CicloEmitirCancelar {
         $consBody = & $MontarConsulta $chave
         $consResp = $null
         $okCons = $false
-        # ADN/distribuição DF-e costuma atrasar; cancelar cedo demais pode impedir a indexação
-        Start-Sleep -Seconds 5
-        for ($tentativa = 1; $tentativa -le 8; $tentativa++) {
-            if ($tentativa -gt 1) { Start-Sleep -Seconds 5 }
+        # ADN/distribuição DF-e: espera longa após autorização (smoke produção)
+        Write-Host "  Aguardando 20s antes da 1a consulta (ADN)..." -ForegroundColor DarkGray
+        Start-Sleep -Seconds 20
+        for ($tentativa = 1; $tentativa -le 10; $tentativa++) {
+            if ($tentativa -gt 1) {
+                Write-Host "  Consulta tentativa $tentativa/10 (aguarda 10s)..." -ForegroundColor DarkGray
+                Start-Sleep -Seconds 10
+            }
+            else {
+                Write-Host "  Consulta tentativa 1/10..." -ForegroundColor DarkGray
+            }
             $consResp = Invoke-FiscalApi -Method POST -Path $PathConsultar -Body $consBody
             $cStatCons = [string](Get-Prop $consResp "codigoStatus")
             $okCons = ((Get-Prop $consResp "sucesso") -eq $true) -or ($cStatCons -eq "DOCUMENTOS_LOCALIZADOS")
             if ($okCons) { break }
             $msgCons = [string](Get-Prop (Get-Prop $consResp "erro") "mensagem")
+            Write-Host "    -> ainda sem DF-e: $msgCons" -ForegroundColor DarkYellow
             if ($msgCons -and $msgCons -notmatch "Nenhum DF-e localizado|sem detalhes|atrasar") {
                 break
             }

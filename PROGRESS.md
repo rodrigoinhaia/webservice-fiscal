@@ -29,7 +29,7 @@
 
 ## Entregas recentes (2026-08)
 
-- [x] **IBPT / Lei 12.741/2012** — `vTotTrib` + `infCpl` na NF-e/NFC-e, API De Olho no Imposto + tabela local, token por emitente
+- [x] **IBPT / Lei 12.741/2012** — `vTotTrib` + `infCpl` na NF-e/NFC-e, API De Olho no Imposto + tabela local, token por emitente (UI no `webservice-fiscal-painel`)
 - [x] **Módulo NFS-e Padrão Nacional** — `OpenAC.Net.NFSe.Nacional` 1.5.0, `/api/nfse`, schemas `Schemas/NFSe/`
 - [x] Emitente: `inscricaoMunicipal`, `email`; migration chave 50 / série 5
 - [x] Testes mapper/validator NFS-e; exemplos `docs/exemplos/nfse/`

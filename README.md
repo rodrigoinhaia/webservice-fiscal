@@ -4,7 +4,7 @@
 
 Microsserviço em **ASP.NET Core 8** para emissão de documentos fiscais eletrônicos brasileiros via REST API. Utiliza [DFe.NET (ZeusAutomacao)](https://github.com/ZeusAutomacao/DFe.NET) para NF-e/NFC-e/CT-e/MDF-e (SEFAZ) e [OpenAC.Net.NFSe.Nacional](https://github.com/OpenAC-Net/OpenAC.Net.NFSe.Nacional) para **NFS-e Padrão Nacional** (ADN).
 
-Compatível com **Docker/Linux** — sem dependência de Windows ou interface gráfica.
+Compatível com **Docker/Linux** — API-only, sem interface gráfica. A UI operacional (emitentes, certificados, IBPT) fica no repositório **[webservice-fiscal-painel](https://github.com/rodrigoinhaia/webservice-fiscal-painel)**.
 
 **Versão atual:** [v1.1.0](https://github.com/rodrigoinhaia/webservice-fiscal/releases/tag/v1.1.0) — NFS-e Padrão Nacional (ADN), emitente com IM/e-mail, migration de chave 50 dígitos.
 
@@ -187,7 +187,7 @@ A senha do certificado é armazenada **criptografada** (`IDataProtection`). Em p
 
 ## Autenticação
 
-Todos os endpoints (exceto `/health`, `/swagger` e `/painel`) exigem o header:
+Todos os endpoints (exceto `/health`) exigem o header:
 
 ```
 X-Api-Key: <sua-chave-configurada-em-API_KEY>
@@ -335,8 +335,7 @@ O campo `nome` é opcional; se omitir, usa o nome do arquivo enviado. A resposta
 | GET | `/api/emissoes` | Histórico paginado de emissões |
 | GET | `/api/emissoes/{chave}` | Último log por chave de acesso |
 | GET | `/health` | Health check (sem autenticação) |
-| GET | `/painel` | Painel IBPT (token do emitente + upload da tabela CSV) |
-| GET | `/swagger` | Swagger UI |
+| GET | `/swagger` | Swagger UI (somente Development) |
 | PUT | `/api/emitentes/{cnpj}/ibpt` | Cadastra o token IBPT do emitente |
 | POST | `/api/ibpt/tabela` | Upload da planilha IBPT (multipart `arquivo` + `uf`) |
 | GET | `/api/ibpt/status` | Status da integração Lei 12.741/2012 |

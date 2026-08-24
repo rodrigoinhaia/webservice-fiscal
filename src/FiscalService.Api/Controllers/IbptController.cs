@@ -43,8 +43,8 @@ public class IbptController : ControllerBase
             UrlProdutos = _config.Ibpt.UrlProdutos,
             IncluirInfCpl = _config.Ibpt.IncluirInfCpl,
             Obrigatorio = _config.Ibpt.Obrigatorio,
-            Observacao = "Token é por CNPJ. Use o painel /painel, PUT /api/emitentes/{cnpj}/ibpt ou Fiscal__Ibpt__Token. " +
-                         "A API oficial pode ficar indisponível — faça upload da tabela CSV no painel."
+            Observacao = "Token é por CNPJ. Cadastre no painel webservice-fiscal-painel, via PUT /api/emitentes/{cnpj}/ibpt ou Fiscal__Ibpt__Token. " +
+                         "A API oficial pode ficar indisponível — faça upload da tabela CSV pelo painel ou POST /api/ibpt/tabela."
         });
     }
 
