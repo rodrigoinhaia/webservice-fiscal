@@ -153,7 +153,7 @@ Módulo **isolado** (OpenAC). Desabilitável via `Fiscal:NFSe:Habilitado=false` 
 
 Emitente cadastrado pode incluir `inscricaoMunicipal` e `email` (opcionais). Exemplos: `docs/exemplos/nfse/`. Schemas: `docs/SCHEMAS-NFSE.md`.
 
-> **DANFSe (NT 008):** a API oficial de PDF do ADN está suspensa; o serviço gera o PDF **somente** localmente com `OpenAC.Net.NFSe.Nacional.DANFSe.PDFSharp`. O fallback `DownloadDANFSeAsync` permanece comentado no código para reativação futura.
+> **DANFSe (NT 008):** PDF local com `OpenAC.Net.NFSe.Nacional.DANFSe.PDFSharp`, logo NFS-e Nacional (sem caixa branca no cabeçalho) e **canhoto no rodapé** (como no portal; o canhoto nativo da lib fica no topo e foi desligado).
 
 ### 4.6 DANFE / PDF — `DanfeController` (`/api/danfe`)
 

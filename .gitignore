@@ -36,9 +36,19 @@ _test_out2/
 
 # Evidências do smoke (scripts/smoke-homologacao.ps1)
 scripts/smoke-output/*.jsonl
+scripts/smoke-output/*.pdf
+scripts/smoke-output/*.json
 scripts/config/homologacao.env
 scripts/config/producao.env
 docs/exemplos/emitente/cadastro-homologacao.local.json
+
+# Artefatos locais de comparação DANFSe (logo oficial versionado em Resources/)
+assets/nfse/*.pdf
+assets/nfse/*-header.png
+assets/nfse/*-img*.png
+assets/nfse/*-clean.png
+assets/nfse/*-transparent.png
+assets/nfse/*-whitebg.png
 
 # Tabelas IBPT (download do portal — não versionar)
 ibpt/*.csv

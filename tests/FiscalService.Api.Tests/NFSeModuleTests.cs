@@ -393,7 +393,7 @@ public class NFSeDanfseLocalRendererTests
         """;
 
     [Fact]
-    public void GerarDeXml_produz_pdf_valido()
+    public void GerarDeXml_produz_pdf_valido_com_logo()
     {
         var renderer = new NFSeDanfseLocalRenderer(
             Microsoft.Extensions.Logging.Abstractions.NullLogger<NFSeDanfseLocalRenderer>.Instance);
@@ -406,6 +406,9 @@ public class NFSeDanfseLocalRendererTests
         Assert.Equal((byte)'P', pdf[1]);
         Assert.Equal((byte)'D', pdf[2]);
         Assert.Equal((byte)'F', pdf[3]);
+        // Com Resources/nfse/logo copiado no output, o PDF deve embutir imagem (XObject).
+        var ascii = System.Text.Encoding.ASCII.GetString(pdf);
+        Assert.Contains("/XObject", ascii);
     }
 
     [Fact]
