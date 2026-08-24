@@ -237,9 +237,17 @@ function Get-ProximoNumero {
     throw "Nao foi possivel obter proximo numero para modelo $ModeloCodigo serie $Serie"
 }
 
+function Get-Prop {
+    param($Obj, [string] $Name, $Default = $null)
+    if ($null -eq $Obj) { return $Default }
+    $p = $Obj.PSObject.Properties[$Name]
+    if ($null -eq $p) { return $Default }
+    return $p.Value
+}
+
 function Test-RespostaAutorizada {
     param($Resp)
-    return ($Resp -and $Resp.sucesso -eq $true -and $Resp.codigoStatus -eq "100")
+    return ($Resp -and (Get-Prop $Resp "sucesso") -eq $true -and (Get-Prop $Resp "codigoStatus") -eq "100")
 }
 
 function Test-CicloEmitirCancelar {
@@ -261,21 +269,22 @@ function Test-CicloEmitirCancelar {
 
     $emitResp = Invoke-FiscalApi -Method POST -Path "/api/$($NomeModelo.ToLower())/emitir" -Body $body
     if (-not (Test-RespostaAutorizada $emitResp)) {
-        $det = if ($emitResp.erro) { "$($emitResp.erro.tipo): $($emitResp.erro.mensagem)" } else { "resposta inesperada" }
+        $erro = Get-Prop $emitResp "erro"
+        $det = if ($erro) { "$(Get-Prop $erro 'tipo'): $(Get-Prop $erro 'mensagem')" } else { "resposta inesperada" }
         Write-SmokeLog -Step "$NomeModelo emitir" -Status "FAIL" -Detail $det -Data $emitResp
         return
     }
 
-    $chave = $emitResp.chaveAcesso
-    $protocolo = $emitResp.protocolo
+    $chave = Get-Prop $emitResp "chaveAcesso"
+    $protocolo = Get-Prop $emitResp "protocolo"
     Write-SmokeLog -Step "$NomeModelo emitir" -Status "OK" -Detail "chave=$chave protocolo=$protocolo" -Data $emitResp
 
     if ($PathConsultar -and $MontarConsulta) {
         $consBody = & $MontarConsulta $chave
         $consResp = Invoke-FiscalApi -Method POST -Path $PathConsultar -Body $consBody
-        $okCons = $consResp.sucesso -eq $true
+        $okCons = (Get-Prop $consResp "sucesso") -eq $true
         Write-SmokeLog -Step "$NomeModelo consultar" -Status $(if ($okCons) { "OK" } else { "FAIL" }) `
-            -Detail "cStat=$($consResp.codigoStatus)" -Data $consResp
+            -Detail "cStat=$(Get-Prop $consResp 'codigoStatus')" -Data $consResp
     }
 
     Start-Sleep -Seconds 2
@@ -283,10 +292,11 @@ function Test-CicloEmitirCancelar {
     $cancelBody = & $MontarCancelamento $chave $protocolo
     $cancelResp = Invoke-FiscalApi -Method POST -Path "/api/$($NomeModelo.ToLower())/cancelar" -Body $cancelBody
     if (Test-RespostaAutorizada $cancelResp) {
-        Write-SmokeLog -Step "$NomeModelo cancelar" -Status "OK" -Detail "cStat=$($cancelResp.codigoStatus)" -Data $cancelResp
+        Write-SmokeLog -Step "$NomeModelo cancelar" -Status "OK" -Detail "cStat=$(Get-Prop $cancelResp 'codigoStatus')" -Data $cancelResp
     }
     else {
-        $det = if ($cancelResp.erro) { "$($cancelResp.erro.tipo): $($cancelResp.erro.mensagem)" } else { "falha no cancelamento" }
+        $erro = Get-Prop $cancelResp "erro"
+        $det = if ($erro) { "$(Get-Prop $erro 'tipo'): $(Get-Prop $erro 'mensagem')" } else { "falha no cancelamento" }
         Write-SmokeLog -Step "$NomeModelo cancelar" -Status "FAIL" -Detail $det -Data $cancelResp
         Write-SmokeLog -Step "$NomeModelo AVISO" -Status "WARN" -Detail "Nota autorizada mas NAO cancelada. Chave: $chave"
     }

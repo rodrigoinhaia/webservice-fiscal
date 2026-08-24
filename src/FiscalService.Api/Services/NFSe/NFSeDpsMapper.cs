@@ -110,11 +110,18 @@ public static class NFSeDpsMapper
         VersaoNFSe versao,
         DFeTipoAmbiente ambiente)
     {
+        const string tipoEventoCancelamento = "101101";
+        var chave = SomenteDigitos(request.ChaveAcesso);
+        if (chave.Length != 50)
+            throw new ArgumentException("chaveAcesso da NFS-e deve ter 50 dígitos.");
+
         return new PedidoRegistroEvento
         {
             Versao = versao,
             Informacoes = new InfPedReg
             {
+                // TSIdPedRegEvt: PRE + chave(50) + tipoEvento(6) = 59
+                Id = $"PRE{chave}{tipoEventoCancelamento}",
                 TipoAmbiente = ambiente,
                 DhEvento = ObterDataHoraBrasil(),
                 ChNFSe = request.ChaveAcesso,

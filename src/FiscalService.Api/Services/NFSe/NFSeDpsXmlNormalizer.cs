@@ -50,6 +50,9 @@ internal static class NFSeDpsXmlNormalizer
     {
         LimparAssinaturaVazia(evento);
 
+        if (string.IsNullOrWhiteSpace(evento.Informacoes.Id))
+            throw new InvalidOperationException("infPedReg.Id é obrigatório antes da assinatura do evento NFS-e.");
+
         var options = ObterSaveOptions(configuracao);
         var xmlCorrigido = RemoverXmlnsVazioInfAssinado(evento.GetXml(options, Encoding.UTF8));
         var assinado = XmlSigning.AssinarXml(

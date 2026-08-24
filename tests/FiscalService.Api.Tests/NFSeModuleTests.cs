@@ -243,6 +243,7 @@ public class NFSeDpsMapperTests
 
         Assert.Equal(chave, evento.Informacoes.ChNFSe);
         Assert.Equal("12345678000190", evento.Informacoes.CNPJAutor);
+        Assert.Equal($"PRE{chave}101101", evento.Informacoes.Id);
     }
 }
 
