@@ -6,7 +6,7 @@ Microsserviço em **ASP.NET Core 8** para emissão de documentos fiscais eletrô
 
 Compatível com **Docker/Linux** — API-only, sem interface gráfica. A UI operacional (emitentes, certificados, IBPT) fica no repositório **[webservice-fiscal-painel](https://github.com/rodrigoinhaia/webservice-fiscal-painel)**.
 
-**Versão atual:** [v1.1.0](https://github.com/rodrigoinhaia/webservice-fiscal/releases/tag/v1.1.0) — NFS-e Padrão Nacional (ADN), emitente com IM/e-mail, migration de chave 50 dígitos.
+**Versão atual:** [v1.1.1](https://github.com/rodrigoinhaia/webservice-fiscal/releases/tag/v1.1.1) — DANFE NF-e Linux, DANFSe PDF local, IBPT, Data Protection e hardening NFS-e.
 
 > **Visão completa de capacidades:** [`docs/CAPACIDADES.md`](docs/CAPACIDADES.md)
 > · Plano: [`PLANNING.md`](PLANNING.md) · Status: [`PROGRESS.md`](PROGRESS.md)
@@ -85,7 +85,7 @@ Resposta esperada:
 ```json
 {
   "status": "healthy",
-  "versao": "1.1.0",
+  "versao": "1.1.1",
   "timestamp": "2025-04-24T10:00:00Z",
   "banco": "healthy",
   "certificados": "healthy",
@@ -512,6 +512,7 @@ Você também pode definir `Database__ConnectionString` completa no compose, se 
 
 | Versão | Destaques |
 |--------|-----------|
+| [**v1.1.1**](https://github.com/rodrigoinhaia/webservice-fiscal/releases/tag/v1.1.1) | DANFE NF-e em Linux (`Danfe.NFe.Core`), DANFSe PDF local (logo/rodapé), IBPT Lei 12.741, Data Protection (arquivo + EF), listagem de séries, correções TLS/timeout/assinatura NFS-e. |
 | [**v1.1.0**](https://github.com/rodrigoinhaia/webservice-fiscal/releases/tag/v1.1.0) | Módulo **NFS-e Padrão Nacional** (`OpenAC.Net.NFSe.Nacional` 1.5.0): emitir, cancelar, consultar, DANFSe; schemas `Schemas/NFSe/`; `Fiscal:NFSe:*`; emitente com `inscricaoMunicipal` e `email`; migration chave 50 / série 5. |
 | v1.0.0 | MVP NF-e/NFC-e/CT-e/MDF-e, cadastro de emitentes, tributação ampliada, Docker, CI. |
 
