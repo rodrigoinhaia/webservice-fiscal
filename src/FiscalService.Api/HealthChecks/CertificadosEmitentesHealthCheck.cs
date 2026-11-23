@@ -81,7 +81,9 @@ public sealed class CertificadosEmitentesHealthCheck : IHealthCheck
         if (expirados.Count > 0)
         {
             data["expirados"] = expirados;
-            return HealthCheckResult.Unhealthy("Certificado(s) expirado(s).", data: data);
+            // Certificado expirado é Degraded (não Unhealthy) para não derrubar o container no health check do Docker/Easypanel,
+            // permitindo que o serviço continue rodando e o usuário acesse o painel para fazer upload de novo certificado.
+            return HealthCheckResult.Degraded("Certificado(s) expirado(s).", data: data);
         }
 
         if (alerta.Count > 0)

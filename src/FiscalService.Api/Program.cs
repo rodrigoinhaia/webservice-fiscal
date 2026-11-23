@@ -245,7 +245,10 @@ try
     // ── Health Checks ────────────────────────────────────────────────────────
     builder.Services.AddHealthChecks()
         .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "db", "sql" })
-        .AddCheck<CertificadosEmitentesHealthCheck>("certificados_emitentes", tags: new[] { "certificado", "emitente" });
+        .AddCheck<CertificadosEmitentesHealthCheck>(
+            "certificados_emitentes",
+            failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
+            tags: new[] { "certificado", "emitente" });
 
     // ── Serviços fiscais (Transient — DFe.NET não é thread-safe) ────────────
     builder.Services.AddTransient<NFeService>();
