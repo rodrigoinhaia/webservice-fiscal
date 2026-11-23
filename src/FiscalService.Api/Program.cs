@@ -393,26 +393,41 @@ try
         ResponseWriter = async (context, report) =>
         {
             context.Response.ContentType = "application/json";
-            var certEntry = report.Entries.TryGetValue("certificados_emitentes", out var cert)
-                ? cert.Status.ToString().ToLowerInvariant()
-                : "nao_configurado";
+            var temCert = report.Entries.TryGetValue("certificados_emitentes", out var cert);
+            var certStatus = temCert ? cert.Status.ToString().ToLowerInvariant() : "nao_configurado";
+            var certMensagem = temCert ? cert.Description : null;
 
             var result = System.Text.Json.JsonSerializer.Serialize(new
             {
                 status = report.Status.ToString().ToLowerInvariant(),
-                versao = typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0",
+                versao = typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.2.2",
                 timestamp = DateTime.UtcNow,
                 banco = report.Entries.TryGetValue("postgresql", out var pg)
                     ? pg.Status.ToString().ToLowerInvariant()
                     : "desconhecido",
-                certificados = certEntry,
+                certificados = certStatus,
+                mensagemCertificados = certMensagem,
                 schemas = Directory.Exists(fiscalConfig.DiretorioSchemas) ? "ok" : "diretorio_nao_encontrado",
                 schemasNfse = !fiscalConfig.NFSe.Habilitado
                     ? "modulo_desabilitado"
                     : Directory.Exists(fiscalConfig.NFSe.DiretorioSchemas) ? "ok" : "diretorio_nao_encontrado",
                 checks = report.Entries.ToDictionary(
                     e => e.Key,
-                    e => e.Value.Status.ToString().ToLowerInvariant())
+                    e => e.Value.Status.ToString().ToLowerInvariant()),
+                entries = report.Entries.ToDictionary(
+                    e => e.Key,
+                    e => new
+                    {
+                        status = e.Value.Status.ToString(),
+                        description = e.Value.Description,
+                        data = e.Value.Data.Count > 0 ? e.Value.Data : null,
+                        duration = e.Value.Duration.ToString()
+                    })
+            }, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                WriteIndented = false
             });
             await context.Response.WriteAsync(result);
         }

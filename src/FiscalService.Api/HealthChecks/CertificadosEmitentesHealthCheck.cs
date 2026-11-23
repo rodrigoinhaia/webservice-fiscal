@@ -35,8 +35,17 @@ public sealed class CertificadosEmitentesHealthCheck : IHealthCheck
 
         if (emitentes.Count == 0)
         {
-            return HealthCheckResult.Healthy("Nenhum emitente cadastrado para verificar certificado.",
-                new Dictionary<string, object> { ["emitentes"] = 0 });
+            return HealthCheckResult.Healthy(
+                "Nenhum emitente ativo cadastrado no sistema.",
+                new Dictionary<string, object>
+                {
+                    ["totalEmitentesAtivos"] = 0,
+                    ["certificadosValidos"] = 0,
+                    ["certificadosExpirados"] = 0,
+                    ["certificadosEmAlerta"] = 0,
+                    ["diasLimiteAlerta"] = alertaDias,
+                    ["statusGeral"] = "SemEmitentes"
+                });
         }
 
         var expirados = new List<string>();
@@ -50,7 +59,7 @@ public sealed class CertificadosEmitentesHealthCheck : IHealthCheck
                 var path = _config.ResolveCertificadoPath(e.CertificadoPath);
                 if (!File.Exists(path))
                 {
-                    alerta.Add($"{e.Cnpj}: arquivo não encontrado ({e.CertificadoPath})");
+                    alerta.Add($"{e.Cnpj}: arquivo do certificado não encontrado ({e.CertificadoPath})");
                     continue;
                 }
 
@@ -61,37 +70,60 @@ public sealed class CertificadosEmitentesHealthCheck : IHealthCheck
                 if (dias < 0)
                     expirados.Add($"{e.Cnpj}: expirado em {cert.NotAfter:yyyy-MM-dd}");
                 else if (dias <= alertaDias)
-                    alerta.Add($"{e.Cnpj}: expira em {cert.NotAfter:yyyy-MM-dd} ({(int)dias} dias)");
+                    alerta.Add($"{e.Cnpj}: expira em {cert.NotAfter:yyyy-MM-dd} ({(int)dias} dia(s) restante(s))");
                 else
                     ok++;
             }
             catch (Exception ex)
             {
-                alerta.Add($"{e.Cnpj}: {ex.Message}");
+                alerta.Add($"{e.Cnpj}: erro ao ler certificado ({ex.Message})");
             }
         }
 
         var data = new Dictionary<string, object>
         {
-            ["emitentesAtivos"] = emitentes.Count,
-            ["certificadosOk"] = ok,
-            ["alertaDias"] = alertaDias
+            ["totalEmitentesAtivos"] = emitentes.Count,
+            ["certificadosValidos"] = ok,
+            ["certificadosExpirados"] = expirados.Count,
+            ["certificadosEmAlerta"] = alerta.Count,
+            ["diasLimiteAlerta"] = alertaDias,
+            ["statusGeral"] = expirados.Count > 0 ? "Expirado" : (alerta.Count > 0 ? "Alerta" : "Regular")
         };
 
         if (expirados.Count > 0)
         {
             data["expirados"] = expirados;
+            data["detalhesExpirados"] = expirados;
+            data["orientacao"] = "Acesse o painel administrativo na aba Emitentes para atualizar o certificado digital A1 (.pfx).";
+
+            var cnpjs = string.Join(", ", expirados.Select(x => x.Split(':')[0].Trim()));
+            var mensagem = $"Atenção: {expirados.Count} certificado(s) digital(is) A1 expirado(s) [{cnpjs}]. O webservice permanece ativo e operacional, mas a emissão fiscal para estes emitentes requer renovação do certificado digital no painel.";
+            if (alerta.Count > 0)
+            {
+                data["alertas"] = alerta;
+                data["detalhesAlertas"] = alerta;
+                mensagem += $" Além disso, {alerta.Count} certificado(s) requer(em) atenção ou estão próximos do vencimento.";
+            }
+
             // Certificado expirado é Degraded (não Unhealthy) para não derrubar o container no health check do Docker/Easypanel,
             // permitindo que o serviço continue rodando e o usuário acesse o painel para fazer upload de novo certificado.
-            return HealthCheckResult.Degraded("Certificado(s) expirado(s).", data: data);
+            return HealthCheckResult.Degraded(mensagem, data: data);
         }
 
         if (alerta.Count > 0)
         {
             data["alertas"] = alerta;
-            return HealthCheckResult.Degraded("Certificado(s) próximo(s) do vencimento ou com problema.", data: data);
+            data["detalhesAlertas"] = alerta;
+            data["orientacao"] = "Verifique os certificados próximos do vencimento no painel web para evitar interrupções na emissão.";
+
+            var cnpjs = string.Join(", ", alerta.Select(x => x.Split(':')[0].Trim()));
+            var mensagem = $"Aviso: {alerta.Count} certificado(s) digital(is) A1 requer(em) atenção ou estão próximos do vencimento (limite de alerta: {alertaDias} dias) [{cnpjs}]. Providencie a renovação com antecedência no painel.";
+            return HealthCheckResult.Degraded(mensagem, data: data);
         }
 
-        return HealthCheckResult.Healthy("Certificados dos emitentes válidos.", data);
+        var msgOk = ok == 1
+            ? "1 certificado digital A1 verificado e válido."
+            : $"{ok} certificados digitais A1 verificados e válidos.";
+        return HealthCheckResult.Healthy(msgOk, data);
     }
 }
