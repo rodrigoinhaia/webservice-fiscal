@@ -6,7 +6,7 @@ Microsserviço em **ASP.NET Core 8** para emissão de documentos fiscais eletrô
 
 Compatível com **Docker/Linux** — API-only, sem interface gráfica. A UI operacional (emitentes, certificados, IBPT) fica no repositório **[webservice-fiscal-painel](https://github.com/rodrigoinhaia/webservice-fiscal-painel)**.
 
-**Versão atual:** [v1.1.1](https://github.com/rodrigoinhaia/webservice-fiscal/releases/tag/v1.1.1) — DANFE NF-e Linux, DANFSe PDF local, IBPT, Data Protection e hardening NFS-e.
+**Versão atual:** [v1.2.0](https://github.com/rodrigoinhaia/webservice-fiscal/releases/tag/v1.2.0) — OpenAC 1.6.0, Zeus 2026.9, oráculo/gabarito RFB RTC, DANFE NF-e Linux, DANFSe PDF local e IBPT.
 
 > **Visão completa de capacidades:** [`docs/CAPACIDADES.md`](docs/CAPACIDADES.md)
 > · Plano: [`PLANNING.md`](PLANNING.md) · Status: [`PROGRESS.md`](PROGRESS.md)
