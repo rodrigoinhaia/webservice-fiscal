@@ -1,0 +1,33 @@
+# Compose para oráculo/gabarito de testes da Reforma Tributária (Receita Federal)
+# Uso: docker compose -f docker-compose.gabarito.yml up -d
+services:
+  rfb-danfse:
+    build:
+      context: ../rfb-gabarito/calculadora-rtc-gerador-danfse
+      dockerfile: Dockerfile
+    container_name: rfb-danfse
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+
+  rfb-calculadora-regular:
+    build:
+      context: ../rfb-gabarito/calculadora-rtc-regime-regular
+      dockerfile: Dockerfile
+    container_name: rfb-calculadora-regular
+    restart: unless-stopped
+    ports:
+      - "8086:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=offline
+
+  rfb-calculadora-simples:
+    build:
+      context: ../rfb-gabarito/calculadora-rtc-simples-nacional
+      dockerfile: Dockerfile
+    container_name: rfb-calculadora-simples
+    restart: unless-stopped
+    ports:
+      - "8087:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=offline
