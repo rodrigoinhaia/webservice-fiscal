@@ -26,13 +26,13 @@
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="8.*" />
 
     <!-- NFS-e Padrão Nacional (ADN) — isolado do Zeus/SEFAZ -->
-    <PackageReference Include="OpenAC.Net.NFSe.Nacional" Version="1.5.0" />
-    <PackageReference Include="OpenAC.Net.NFSe.Nacional.DANFSe.PDFSharp" Version="1.0.0" />
+    <PackageReference Include="OpenAC.Net.NFSe.Nacional" Version="1.6.0" />
+    <PackageReference Include="OpenAC.Net.NFSe.Nacional.DANFSe.PDFSharp" Version="1.6.0" />
 
-    <!-- DFe.NET: NFe/NFCe/CTe/MDFe. Pin Zeus 2026.8.18.2047 -->
-    <PackageReference Include="Zeus.Net.NFe.NFCe" Version="2026.8.18.2047" />
-    <PackageReference Include="Zeus.Net.CTe" Version="2026.8.18.2047" />
-    <PackageReference Include="Zeus.Net.MDFe" Version="2026.8.18.2047" />
+    <!-- DFe.NET: NFe/NFCe/CTe/MDFe. Pin Zeus 2026.9.24.1416 -->
+    <PackageReference Include="Zeus.Net.NFe.NFCe" Version="2026.9.24.1416" />
+    <PackageReference Include="Zeus.Net.CTe" Version="2026.9.24.1416" />
+    <PackageReference Include="Zeus.Net.MDFe" Version="2026.9.24.1416" />
 
     <!-- Swagger / OpenAPI -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.*" />
